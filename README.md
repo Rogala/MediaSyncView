@@ -35,7 +35,8 @@ Download p5.min.js from the official CDN:
 ```
 https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js
 ```
-https://github.com/user-attachments/assets/c969f33a-0c94-4264-bf60-ba21c770c72a
+
+https://github.com/user-attachments/assets/b1ba0b5e-fc57-48ec-ac05-063f7ac86946
 
 ---
 
