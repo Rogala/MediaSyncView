@@ -23,6 +23,8 @@ Drop multiple images or videos into the window. Everything stays in sync — pla
 
 ---
 
+https://github.com/user-attachments/assets/bcd13bc7-c193-42d2-a133-2462f99c12b8
+
 ## How to use
 
 **Online:** Download `MediaSyncView.html`, open it in any modern browser.
@@ -49,6 +51,8 @@ https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js
 Browser support for specific codecs varies. MP4/H.264 and WebM/VP9 have the widest compatibility.
 
 ---
+
+
 
 ## Keyboard shortcuts
 
