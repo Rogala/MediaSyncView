@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- MediaSyncView v1.0 · https://github.com/Rogala/MediaSyncView -->
+<!-- Based on MediaSyncer by WhatDreamsCost, GPL-3.0 · https://github.com/WhatDreamsCost/MediaSyncer -->
+<title>MediaSyncView</title>
+<meta name="description" content="MediaSyncView: Compare AI images &amp; videos with perfectly synchronized zoom and playback.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<script>
+// Load p5.js: try local file first, fall back to CDN
+(function(){
+  var s=document.createElement('script');
+  s.src='p5.min.js';
+  s.onerror=function(){
+    var f=document.createElement('script');
+    f.src='https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js';
+    document.head.appendChild(f);
+  };
+  document.head.appendChild(s);
+})();
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --tt:.18s;
+  --bg:#0d0f12;--surface:#161a1f;--surface2:#1e2329;--border:#2a2f38;
+  --text:#d8dde6;--muted:#5a6170;
+  --blue:#3b82f6;--blue-h:#60a5fa;
+  --green:#00e5a0;--green-h:#00ffb2;
+  --red:#ef4444;--red-h:#f87171;
+  --canvas-bg:#000;--canvas-br:#2a2f38;
+  --glow-b:rgba(59,130,246,.25);--glow-g:rgba(0,229,160,.25);--glow-r:rgba(239,68,68,.25);
+}
+body.light{
+  --bg:#f0f2f5;--surface:#fff;--surface2:#f7f8fa;--border:#dde1e8;
+  --text:#141720;--muted:#8a919e;--canvas-bg:#f5f5f5;--canvas-br:#c5cad4;
+}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);
+  display:flex;flex-direction:column;align-items:stretch;
+  height:100vh;padding:5px;gap:5px;
+  transition:background var(--tt),color var(--tt);
+}
+#app{width:100%;display:flex;flex-direction:column;gap:5px;height:100%;min-height:0}
+
+/* Canvas */
+#canvas-wrap{
+  border:1.5px dashed var(--canvas-br);border-radius:.6rem;overflow:hidden;
+  width:100%;flex:1;min-height:0;background:var(--canvas-bg);
+  display:flex;align-items:center;justify-content:center;position:relative;
+  transition:border-color var(--tt),background var(--tt);
+}
+#canvas-wrap canvas{display:block;width:100%!important;height:100%!important}
+
+/* Split divider */
+#split-divider{
+  position:absolute;top:0;bottom:0;width:4px;
+  background:var(--green);cursor:ew-resize;z-index:10;
+  left:50%;transform:translateX(-50%);display:none;
+  box-shadow:0 0 14px var(--glow-g);touch-action:none;
+}
+#split-divider::after{
+  content:'⟺';
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:var(--green);color:#000;
+  font-size:10px;font-weight:900;
+  width:20px;height:20px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  line-height:1;
+}
+body.split-active #split-divider{display:block}
+
+/* Panel */
+#panel{
+  background:var(--surface);border:1px solid var(--border);border-radius:.6rem;
+  padding:.36rem .65rem;
+  display:flex;flex-direction:row;align-items:center;gap:.4rem;
+  flex-shrink:0;box-shadow:0 4px 24px rgba(0,0,0,.25);
+  transition:background var(--tt),border-color var(--tt);
+  flex-wrap:nowrap;overflow-x:auto;overflow-y:visible;
+  position:relative;z-index:10;
+}
+
+/* Fullscreen */
+body.fs-mode{padding:0;gap:0}
+body.fs-mode #panel{display:none}
+body.fs-mode #canvas-wrap{border-radius:0;border:none}
+/* P key in fullscreen shows panel as bottom overlay */
+body.fs-mode.panel-visible #panel{
+  display:flex;position:fixed;bottom:5px;left:5px;right:5px;z-index:500;
+  border-radius:.6rem;
+}
+
+/* Panel hidden (P key, normal mode) */
+body.panel-hidden #panel{display:none}
+body.panel-hidden{gap:0}
+
+/* Buttons */
+.btn{
+  font-family:'Syne',sans-serif;font-weight:600;font-size:.78rem;
+  padding:.35rem .8rem;border-radius:.4rem;border:1px solid transparent;
+  cursor:pointer;white-space:nowrap;transition:all var(--tt);
+  background:var(--blue);color:#fff;flex-shrink:0;user-select:none;
+}
+.btn:hover{background:var(--blue-h);transform:translateY(-1px);box-shadow:0 0 12px var(--glow-b)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{
+  background:var(--surface2)!important;color:var(--muted)!important;
+  cursor:not-allowed;opacity:.5;transform:none!important;box-shadow:none!important;
+}
+.btn-icon{
+  padding:.35rem .42rem;display:flex;align-items:center;justify-content:center;
+  background:var(--surface2);color:var(--text);border-color:var(--border);
+}
+.btn-icon:hover{background:var(--border);box-shadow:none;transform:translateY(-1px)}
+.btn-icon svg{width:1rem;height:1rem;pointer-events:none}
+.btn-icon.active{background:var(--green);color:#000;border-color:transparent}
+.btn-icon.active:hover{background:var(--green-h);box-shadow:0 0 10px var(--glow-g)}
+.btn-green{background:var(--green);color:#000;border-color:transparent}
+.btn-green:hover{background:var(--green-h);box-shadow:0 0 12px var(--glow-g)}
+.btn-red{background:var(--red);color:#fff;border-color:transparent}
+.btn-red:hover{background:var(--red-h);box-shadow:0 0 12px var(--glow-r)}
+
+/* Row buttons (1-4) */
+.row-btn{min-width:1.9rem;padding:.35rem .3rem;font-family:'JetBrains Mono',monospace;font-size:.8rem}
+
+/* Number inputs */
+.num-input{
+  width:44px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:.35rem;padding:.28rem .3rem;text-align:center;
+  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.8rem;
+  transition:border-color var(--tt);
+}
+.num-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 6px var(--glow-b)}
+label.lbl{font-size:.7rem;font-weight:600;color:var(--muted);letter-spacing:.03em;flex-shrink:0}
+
+/* Sliders */
+input[type=range]{
+  -webkit-appearance:none;height:5px;border-radius:3px;
+  background:var(--surface2);border:1px solid var(--border);outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:var(--blue);border:2px solid var(--surface);cursor:pointer;
+  transition:box-shadow var(--tt);
+}
+input[type=range]:hover::-webkit-slider-thumb{box-shadow:0 0 8px var(--glow-b)}
+#seek-slider{flex:1;min-width:80px}
+
+/* Compact popup (Speed & Zoom) */
+.popup-wrap{position:relative;display:flex;align-items:center;flex-shrink:0}
+.popup-menu{
+  display:none;position:fixed;
+  background:var(--surface);border:1px solid var(--border);border-radius:.5rem;
+  padding:.55rem .65rem;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:9999;
+  flex-direction:column;align-items:center;gap:.38rem;width:155px;
+}
+.popup-menu.open{display:flex}
+.popup-menu label.lbl{font-size:.68rem}
+.popup-menu input[type=range]{width:100%}
+.popup-val{
+  font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:600;
+  background:var(--surface2);border:1px solid var(--border);border-radius:.3rem;
+  padding:.12rem .38rem;min-width:3rem;text-align:center;
+}
+
+/* Timecode */
+#time-block{display:flex;flex-direction:column;align-items:center;gap:.04rem;flex-shrink:0}
+#timecode{font-family:'JetBrains Mono',monospace;font-size:.88rem;color:var(--muted);letter-spacing:.04em}
+#frame-counter{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:var(--muted);opacity:.6}
+
+/* Separator */
+.sep{width:1px;height:1.15rem;background:var(--border);flex-shrink:0}
+
+/* File input */
+#file-input{display:none}
+
+/* Help modal */
+#help-modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.68);
+  z-index:100;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+#help-modal.open{display:flex}
+#help-box{
+  background:var(--surface);border:1px solid var(--border);border-radius:.8rem;
+  padding:1.2rem 1.5rem 1rem;max-width:480px;width:94%;
+  box-shadow:0 24px 64px rgba(0,0,0,.6);position:relative;
+  max-height:90vh;overflow-y:auto;
+}
+#help-box h2{font-size:.95rem;font-weight:700;margin-bottom:.85rem;color:var(--green);letter-spacing:.04em}
+.hclose{
+  position:absolute;top:.75rem;right:.85rem;
+  background:none;border:none;color:var(--muted);font-size:1.15rem;
+  cursor:pointer;line-height:1;padding:.1rem .3rem;border-radius:.3rem;transition:color var(--tt);
+}
+.hclose:hover{color:var(--text);background:var(--surface2)}
+.hgrid{display:grid;grid-template-columns:auto 1fr;gap:.28rem .8rem;font-size:.78rem;align-items:center}
+.hk{
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;
+  background:var(--surface2);border:1px solid var(--border);border-radius:.28rem;
+  padding:.1rem .38rem;color:var(--blue);white-space:nowrap;justify-self:start;
+}
+.hd{color:var(--text);line-height:1.3}
+.hs{
+  font-size:.62rem;font-weight:700;letter-spacing:.09em;color:var(--muted);
+  text-transform:uppercase;margin-top:.55rem;margin-bottom:.1rem;
+  grid-column:1 / -1;
+}
+#help-foot{margin-top:.85rem;font-size:.67rem;color:var(--muted);text-align:center}
+
+/* FS hint */
+#fs-hint{
+  position:fixed;bottom:10px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.75);color:var(--muted);
+  font-family:'JetBrains Mono',monospace;font-size:.68rem;
+  padding:.26rem .6rem;border-radius:.4rem;
+  pointer-events:none;opacity:0;transition:opacity .3s;z-index:50;
+}
+body.fs-mode #fs-hint{opacity:1}
+body.panel-hidden #fs-hint{opacity:1}
+
+/* pg (panel group helper) */
+.pg{display:flex;align-items:center;gap:.36rem;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="canvas-wrap">
+    <div id="split-divider"></div>
+  </div>
+  <div id="panel">
+
+    <!-- Rows 1-4 -->
+    <div class="pg">
+      <label class="lbl" id="lbl-rows">Rows</label>
+      <button class="btn btn-icon row-btn" id="r1" onclick="setRows(1)">1</button>
+      <button class="btn btn-icon row-btn" id="r2" onclick="setRows(2)">2</button>
+      <button class="btn btn-icon row-btn" id="r3" onclick="setRows(3)">3</button>
+      <button class="btn btn-icon row-btn" id="r4" onclick="setRows(4)">4</button>
+    </div>
+
+    <!-- Clear (5) -->
+    <button class="btn btn-red" id="clear-btn" style="padding:.3rem .5rem" title="">✕</button>
+    <div class="sep"></div>
+
+    <!-- Loop (6) -->
+    <button id="loop-btn" class="btn btn-icon active" title="">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+    </button>
+
+    <!-- Speed popup (7) -->
+    <div class="popup-wrap" id="speed-wrap">
+      <button id="speed-btn" class="btn btn-icon btn-green" title="">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </button>
+      <div id="speed-menu" class="popup-menu">
+        <label class="lbl" id="lbl-speed">Speed</label>
+        <input type="range" id="speed-slider" min="0" max="8" value="4" step="1">
+        <span id="speed-disp" class="popup-val">1.00×</span>
+      </div>
+    </div>
+
+    <!-- Zoom popup (8) -->
+    <div class="popup-wrap" id="zoom-wrap">
+      <button id="zoom-btn" class="btn btn-icon" title="">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+      </button>
+      <div id="zoom-menu" class="popup-menu">
+        <label class="lbl" id="lbl-zoom">Zoom</label>
+        <input type="range" id="zoom-slider" min="1" max="5" value="1" step="0.1">
+        <span id="zoom-disp" class="popup-val">1.0×</span>
+      </div>
+    </div>
+
+    <!-- Split (9) -->
+    <button id="split-btn" class="btn btn-icon" title="" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="8" height="16" rx="1"/><rect x="14" y="4" width="8" height="16" rx="1"/></svg>
+    </button>
+
+    <!-- Mute (0) -->
+    <button id="mute-btn" class="btn btn-icon" title=""></button>
+    <div class="sep"></div>
+
+    <!-- Playback -->
+    <div class="pg">
+      <button id="prev-btn" class="btn btn-icon" title="">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+      </button>
+      <button id="play-btn" class="btn" style="min-width:4rem">Play</button>
+      <button id="next-btn" class="btn btn-icon" title="">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+      </button>
+    </div>
+    <div class="sep"></div>
+
+    <!-- FPS -->
+    <div class="pg">
+      <label class="lbl" id="lbl-fps">FPS</label>
+      <input type="number" id="fps-input" class="num-input" min="1" value="24" style="width:46px">
+    </div>
+
+    <!-- Seek + Timecode -->
+    <input type="range" id="seek-slider" min="0" max="1000" value="0" disabled>
+    <div id="time-block">
+      <div id="timecode">00:00.00 / 00:00.00</div>
+      <div id="frame-counter">0 / 0</div>
+    </div>
+    <div class="sep"></div>
+
+    <!-- Import / Theme / Help / Panel -->
+    <div class="pg">
+      <input type="file" id="file-input" multiple accept="video/*,image/jpeg,image/png,image/gif,image/webp,image/avif,image/svg+xml,image/bmp,image/x-icon,image/apng">
+      <button id="import-btn" class="btn">Import</button>
+      <button id="theme-btn" class="btn btn-icon btn-green" title=""></button>
+      <button id="help-btn" class="btn btn-icon btn-red" title="">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
+      </button>
+      <button id="panel-btn" class="btn btn-icon" title="">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="fs-hint"></div>
+
+<!-- Help modal -->
+<div id="help-modal" role="dialog" aria-modal="true">
+  <div id="help-box">
+    <h2 id="help-title"></h2>
+    <button class="hclose" id="hclose">✕</button>
+    <div class="hgrid" id="hgrid"></div>
+    <div id="help-foot"></div>
+  </div>
+</div>
+
+<script>
+// ═══ I18N ════════════════════════════════════════════════════════════
+// All translatable strings are keyed here. applyLang() maps them to element IDs.
+// To add a new language: copy any block, change the key (e.g. 'ko'), translate values.
+const I18N = {
+  en:{
+    play:'Play',pause:'Pause',import:'Import',
+    rows:'Rows',fps:'FPS',speed:'Speed',zoom:'Zoom',
+    dragdrop:'Drag & Drop or click to import media',
+    fs_hint:'F — exit fullscreen',
+    help_title:'MediaSyncView v1.0 — Shortcuts',
+    help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
+    t_loop:'Loop (6)',t_prev:'Prev frame (←)',t_next:'Next frame (→)',
+    t_split:'Split View (9)',t_mute:'Mute all (0)',t_theme:'Theme (T)',
+    t_help:'Help (H)',t_clear:'Clear all (5)',t_speed:'Speed (7)',t_zoom:'Zoom (8)',t_panel:'Panel (P)',
+    keys:[['Playback',null],
+          ['Space','Play / Pause'],['← →','Frame step'],
+          ['1','Row 1'],['2','Row 2'],['3','Row 3'],['4','Row 4'],
+          ['5','Clear all'],['6','Loop'],['7','Speed'],['8','Zoom'],['9','Split View'],['0','Mute all'],
+          ['View',null],
+          ['F / F11','Fullscreen'],['P','Toggle panel'],
+          ['Other',null],
+          ['I','Import'],['T','Theme'],['H','Help'],
+          ['Scroll','Zoom'],['Middle drag','Pan']]
+  },
+  de:{
+    play:'Abspielen',pause:'Pause',import:'Importieren',
+    rows:'Zeilen',fps:'FPS',speed:'Geschw.',zoom:'Zoom',
+    dragdrop:'Medien hierher ziehen oder klicken',
+    fs_hint:'F — Vollbild beenden',
+    help_title:'MediaSyncView v1.0 — Tastenkürzel',
+    help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
+    t_loop:'Wiederholen (6)',t_prev:'Voriges Bild (←)',t_next:'Nächstes Bild (→)',
+    t_split:'Geteilte Ansicht (9)',t_mute:'Alle stummschalten (0)',t_theme:'Design (T)',
+    t_help:'Hilfe (H)',t_clear:'Alles löschen (5)',t_speed:'Geschwindigkeit (7)',t_zoom:'Zoom (8)',t_panel:'Panel (P)',
+    keys:[['Wiedergabe',null],
+          ['Space','Abspielen / Pause'],['← →','Bild für Bild'],
+          ['1','Zeile 1'],['2','Zeile 2'],['3','Zeile 3'],['4','Zeile 4'],
+          ['5','Alles löschen'],['6','Wiederholen'],['7','Geschwindigkeit'],['8','Zoom'],['9','Geteilte Ansicht'],['0','Stummschalten'],
+          ['Ansicht',null],
+          ['F / F11','Vollbild'],['P','Panel ein/aus'],
+          ['Sonstiges',null],
+          ['I','Importieren'],['T','Design'],['H','Hilfe'],
+          ['Scroll','Zoom'],['Mittlere Maus','Schwenken']]
+  },
+  fr:{
+    play:'Lire',pause:'Pause',import:'Importer',
+    rows:'Lignes',fps:'IPS',speed:'Vitesse',zoom:'Zoom',
+    dragdrop:'Glisser-déposer ou cliquer pour importer',
+    fs_hint:'F — quitter le plein écran',
+    help_title:'MediaSyncView v1.0 — Raccourcis',
+    help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
+    t_loop:'Boucle (6)',t_prev:'Image préc. (←)',t_next:'Image suiv. (→)',
+    t_split:'Vue partagée (9)',t_mute:'Couper le son (0)',t_theme:'Thème (T)',
+    t_help:'Aide (H)',t_clear:'Tout effacer (5)',t_speed:'Vitesse (7)',t_zoom:'Zoom (8)',t_panel:'Panneau (P)',
+    keys:[['Lecture',null],
+          ['Space','Lecture / Pause'],['← →','Image par image'],
+          ['1','Ligne 1'],['2','Ligne 2'],['3','Ligne 3'],['4','Ligne 4'],
+          ['5','Tout effacer'],['6','Boucle'],['7','Vitesse'],['8','Zoom'],['9','Vue partagée'],['0','Couper le son'],
+          ['Affichage',null],
+          ['F / F11','Plein écran'],['P','Masquer panneau'],
+          ['Autre',null],
+          ['I','Importer'],['T','Thème'],['H','Aide'],
+          ['Scroll','Zoom'],['Clic central','Panoramique']]
+  },
+  es:{
+    play:'Reproducir',pause:'Pausa',import:'Importar',
+    rows:'Filas',fps:'FPS',speed:'Velocidad',zoom:'Zoom',
+    dragdrop:'Arrastra o haz clic para importar',
+    fs_hint:'F — salir de pantalla completa',
+    help_title:'MediaSyncView v1.0 — Atajos',
+    help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
+    t_loop:'Bucle (6)',t_prev:'Fotograma ant. (←)',t_next:'Fotograma sig. (→)',
+    t_split:'Vista dividida (9)',t_mute:'Silenciar todo (0)',t_theme:'Tema (T)',
+    t_help:'Ayuda (H)',t_clear:'Borrar todo (5)',t_speed:'Velocidad (7)',t_zoom:'Zoom (8)',t_panel:'Panel (P)',
+    keys:[['Reproducción',null],
+          ['Space','Reproducir / Pausa'],['← →','Fotograma a fotograma'],
+          ['1','Fila 1'],['2','Fila 2'],['3','Fila 3'],['4','Fila 4'],
+          ['5','Borrar todo'],['6','Bucle'],['7','Velocidad'],['8','Zoom'],['9','Vista dividida'],['0','Silenciar'],
+          ['Vista',null],
+          ['F / F11','Pantalla completa'],['P','Ocultar panel'],
+          ['Otro',null],
+          ['I','Importar'],['T','Tema'],['H','Ayuda'],
+          ['Scroll','Zoom'],['Clic central','Paneo']]
+  },
+  it:{
+    play:'Riproduci',pause:'Pausa',import:'Importa',
+    rows:'Righe',fps:'FPS',speed:'Velocità',zoom:'Zoom',
+    dragdrop:'Trascina o clicca per importare',
+    fs_hint:'F — esci dallo schermo intero',
+    help_title:'MediaSyncView v1.0 — Scorciatoie',
+    help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
+    t_loop:'Ripeti (6)',t_prev:'Fotogr. prec. (←)',t_next:'Fotogr. succ. (→)',
+    t_split:'Vista divisa (9)',t_mute:'Silenzia tutto (0)',t_theme:'Tema (T)',
+    t_help:'Aiuto (H)',t_clear:'Cancella tutto (5)',t_speed:'Velocità (7)',t_zoom:'Zoom (8)',t_panel:'Pannello (P)',
+    keys:[['Riproduzione',null],
+          ['Space','Riproduci / Pausa'],['← →','Fotogramma per fotogramma'],
+          ['1','Riga 1'],['2','Riga 2'],['3','Riga 3'],['4','Riga 4'],
+          ['5','Cancella tutto'],['6','Ripeti'],['7','Velocità'],['8','Zoom'],['9','Vista divisa'],['0','Silenzia'],
+          ['Vista',null],
+          ['F / F11','Schermo intero'],['P','Nascondi pannello'],
+          ['Altro',null],
+          ['I','Importa'],['T','Tema'],['H','Aiuto'],
+          ['Scroll','Zoom'],['Clic centrale','Panoramica']]
+  },
+  pt:{
+    play:'Reproduzir',pause:'Pausar',import:'Importar',
+    rows:'Linhas',fps:'FPS',speed:'Veloc.',zoom:'Zoom',
+    dragdrop:'Arraste ou clique para importar mídia',
+    fs_hint:'F — sair da tela cheia',
+    help_title:'MediaSyncView v1.0 — Atalhos',
+    help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
+    t_loop:'Loop (6)',t_prev:'Frame ant. (←)',t_next:'Frame seg. (→)',
+    t_split:'Split View (9)',t_mute:'Mudo (0)',t_theme:'Tema (T)',
+    t_help:'Ajuda (H)',t_clear:'Limpar (5)',t_speed:'Velocidade (7)',t_zoom:'Zoom (8)',t_panel:'Painel (P)',
+    keys:[['Reprodução',null],
+          ['Space','Reproduzir / Pausar'],['← →','Frame a frame'],
+          ['1','Linha 1'],['2','Linha 2'],['3','Linha 3'],['4','Linha 4'],
+          ['5','Limpar'],['6','Loop'],['7','Velocidade'],['8','Zoom'],['9','Split View'],['0','Mudo'],
+          ['Visualização',null],
+          ['F / F11','Tela cheia'],['P','Painel'],
+          ['Outros',null],
+          ['I','Importar'],['T','Tema'],['H','Ajuda'],
+          ['Scroll','Zoom'],['Botão do meio','Panorâmica']]
+  },
+  zh:{
+    play:'播放',pause:'暂停',import:'导入',
+    rows:'行',fps:'帧率',speed:'速度',zoom:'缩放',
+    dragdrop:'拖放或点击导入媒体',
+    fs_hint:'F — 退出全屏',
+    help_title:'MediaSyncView v1.0 — 快捷键',
+    help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
+    t_loop:'循环 (6)',t_prev:'上一帧 (←)',t_next:'下一帧 (→)',
+    t_split:'分屏 (9)',t_mute:'静音 (0)',t_theme:'主题 (T)',
+    t_help:'帮助 (H)',t_clear:'清除全部 (5)',t_speed:'速度 (7)',t_zoom:'缩放 (8)',t_panel:'面板 (P)',
+    keys:[['播放',null],
+          ['空格','播放 / 暂停'],['← →','逐帧'],
+          ['1','第1行'],['2','第2行'],['3','第3行'],['4','第4行'],
+          ['5','清除全部'],['6','循环'],['7','速度'],['8','缩放'],['9','分屏'],['0','静音'],
+          ['视图',null],
+          ['F / F11','全屏'],['P','隐藏面板'],
+          ['其他',null],
+          ['I','导入'],['T','主题'],['H','帮助'],
+          ['滚轮','缩放'],['中键拖动','平移']]
+  },
+  ja:{
+    play:'再生',pause:'一時停止',import:'インポート',
+    rows:'行',fps:'FPS',speed:'速度',zoom:'ズーム',
+    dragdrop:'ドラッグ＆ドロップ、またはクリックしてメディアを追加',
+    fs_hint:'F — 全画面を終了',
+    help_title:'MediaSyncView v1.0 — ショートカット',
+    help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
+    t_loop:'ループ (6)',t_prev:'前のフレーム (←)',t_next:'次のフレーム (→)',
+    t_split:'分割表示 (9)',t_mute:'ミュート (0)',t_theme:'テーマ (T)',
+    t_help:'ヘルプ (H)',t_clear:'クリア (5)',t_speed:'速度 (7)',t_zoom:'ズーム (8)',t_panel:'パネル (P)',
+    keys:[['再生',null],
+          ['Space','再生 / 一時停止'],['← →','フレーム移動'],
+          ['1','行1'],['2','行2'],['3','行3'],['4','行4'],
+          ['5','クリア'],['6','ループ'],['7','速度'],['8','ズーム'],['9','分割表示'],['0','ミュート'],
+          ['表示',null],
+          ['F / F11','全画面'],['P','パネル'],
+          ['その他',null],
+          ['I','インポート'],['T','テーマ'],['H','ヘルプ'],
+          ['スクロール','ズーム'],['中ボタンドラッグ','パン']]
+  },
+  uk:{
+    play:'Грати',pause:'Пауза',import:'Імпорт',
+    rows:'Ряди',fps:'Кадри',speed:'Швидк.',zoom:'Масштаб',
+    dragdrop:'Перетягніть або натисніть для імпорту',
+    fs_hint:'F — вийти з повного екрану',
+    help_title:'MediaSyncView v1.0 — Гарячі клавіші',
+    help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
+    t_loop:'Повтор (6)',t_prev:'Попередній кадр (←)',t_next:'Наступний кадр (→)',
+    t_split:'Split View (9)',t_mute:'Звук вкл/викл (0)',t_theme:'Тема (T)',
+    t_help:'Довідка (H)',t_clear:'Очистити (5)',t_speed:'Швидкість (7)',t_zoom:'Масштаб (8)',t_panel:'Панель (P)',
+    keys:[['Відтворення',null],
+          ['Пробіл','Грати / Пауза'],['← →','Покадрово'],
+          ['1','1 ряд'],['2','2 ряди'],['3','3 ряди'],['4','4 ряди'],
+          ['5','Очистити'],['6','Повтор'],['7','Швидкість'],['8','Масштаб'],['9','Split View'],['0','Звук вкл/викл'],
+          ['Вигляд',null],
+          ['F / F11','Повний екран'],['P','Сховати/показати панель'],
+          ['Інше',null],
+          ['I','Імпорт'],['T','Тема'],['H','Довідка'],
+          ['Scroll','Масштаб'],['Середня кнопка','Панорама']]
+  }
+};
+// Language detection: browser sends "uk-UA", "pt-BR", "zh-CN" etc. — take base code only
+const LC=(()=>{
+  const raw=(navigator.language||'en').toLowerCase();
+  const base=raw.split('-')[0];
+  const alias={ua:'uk'};           // some browsers send 'ua' instead of 'uk'
+  return I18N[alias[base]||base]||I18N.en;
+})();
+
+// ═══ ICONS ════════════════════════════════════════════════════════════
+const ICONS={
+  moon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`,
+  sun:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2m-4.34-7.07-1.41 1.41M6.34 17.66l-1.41 1.41"/></svg>`,
+  vol:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`,
+  mute:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`,
+};
+
+// ═══ STATE ════════════════════════════════════════════════════════════
+let mediaElements=[],videos=[],masterVideo=null;
+let isPlaying=false,isSeeking=false,isLooping=true;
+let gridCols=0,gridRows=0,gridLayout=[];
+let isDragging=false,draggedMedia=null,hoveredIdx=-1;
+let isPanning=false,lastMX=0,lastMY=0,isDraggingSlider=false;
+let zoomLevel=1.0,panX=0,panY=0,playbackRate=1.0;
+let globalMuted=true;
+let splitActive=false,splitPos=0.5,isDraggingSplit=false;
+let canvasBg,canvasText;
+let frameRateInput;
+const SPEEDS=[0.1,0.25,0.5,0.75,1.0,1.25,1.5,1.75,2.0];
+
+// ═══ p5 SETUP ═════════════════════════════════════════════════════════
+function setup(){
+  const wrap=document.getElementById('canvas-wrap');
+  const c=createCanvas(wrap.clientWidth,wrap.clientHeight);
+  c.parent('canvas-wrap');
+  c.drop(handleFile);
+  c.dragOver(()=>{if(!document.getElementById('help-modal').classList.contains('open'))select('#canvas-wrap').style('border-style','solid')});
+  c.dragLeave(()=>select('#canvas-wrap').style('border-style','dashed'));
+  c.mouseWheel(handleWheel);
+  frameRateInput=select('#fps-input');
+
+  // ResizeObserver keeps canvas in sync with any layout change (panel toggle, fullscreen, window resize)
+  new ResizeObserver(entries=>{
+    const e=entries[0];
+    resizeCanvas(e.contentRect.width,e.contentRect.height);
+    applyThemeColors();
+  }).observe(wrap);
+
+  applyLang();
+  initTheme();
+  buildHelp();
+
+  // Wiring — use native addEventListener for import/help to avoid p5 bubbling to canvas
+  document.getElementById('import-btn').addEventListener('mousedown',e=>{e.stopPropagation();document.getElementById('file-input').click()});
+  document.getElementById('file-input').addEventListener('change',handleFileInput);
+  document.getElementById('help-btn').addEventListener('mousedown',e=>{e.stopPropagation();openHelp()});
+  document.getElementById('hclose').addEventListener('mousedown',e=>{e.stopPropagation();closeHelp()});
+  document.getElementById('help-modal').addEventListener('mousedown',e=>{if(e.target===document.getElementById('help-modal'))closeHelp()});
+
+  document.getElementById('panel-btn').addEventListener('mousedown',e=>{e.stopPropagation();togglePanel()});
+
+  select('#theme-btn').mousePressed(toggleTheme);
+  select('#play-btn').mousePressed(togglePlayPause);
+  select('#prev-btn').mousePressed(()=>stepFrame(-1));
+  select('#next-btn').mousePressed(()=>stepFrame(1));
+  select('#clear-btn').mousePressed(clearAll);
+  select('#loop-btn').mousePressed(toggleLooping);
+  select('#split-btn').mousePressed(toggleSplit);
+  select('#mute-btn').mousePressed(toggleGlobalMute);
+
+  // Speed popup — mousedown to beat p5's mousePressed
+  document.getElementById('speed-btn').addEventListener('mousedown',e=>{e.stopPropagation();togglePopup('speed-menu')});
+  select('#speed-slider').input(onSpeedChange);
+  select('#speed-slider').mousePressed(()=>isDraggingSlider=true);
+
+  // Zoom popup — mousedown to beat p5's mousePressed
+  document.getElementById('zoom-btn').addEventListener('mousedown',e=>{e.stopPropagation();togglePopup('zoom-menu')});
+  select('#zoom-slider').input(onZoom);
+  select('#zoom-slider').mousePressed(()=>isDraggingSlider=true);
+
+  // Close popups on outside mousedown
+  document.addEventListener('mousedown',e=>{
+    ['speed-menu','zoom-menu'].forEach(id=>{
+      const m=document.getElementById(id);
+      if(m.classList.contains('open')&&!m.closest('.popup-wrap').contains(e.target))m.classList.remove('open');
+    });
+  });
+
+  // Seek — track mousedown/up separately so isSeeking never gets stuck
+  const seekEl=document.getElementById('seek-slider');
+  seekEl.addEventListener('mousedown',()=>{isDraggingSlider=true;isSeeking=true});
+  seekEl.addEventListener('input',doSeek);
+  seekEl.addEventListener('mouseup',()=>{isSeeking=false;isDraggingSlider=false});
+
+  // Split divider drag
+  const divider=document.getElementById('split-divider');
+  divider.addEventListener('mousedown',e=>{isDraggingSplit=true;e.preventDefault();e.stopPropagation()});
+  window.addEventListener('mousemove',e=>{
+    if(!isDraggingSplit)return;
+    const r=document.getElementById('canvas-wrap').getBoundingClientRect();
+    splitPos=Math.max(0.1,Math.min(0.9,(e.clientX-r.left)/r.width));
+    divider.style.left=(splitPos*100)+'%';
+  });
+  window.addEventListener('mouseup',()=>{isDraggingSplit=false});
+
+  // Fullscreen
+  document.addEventListener('fullscreenchange',()=>{
+    const isFs=!!document.fullscreenElement;
+    document.body.classList.toggle('fs-mode',isFs);
+    if(!isFs)document.body.classList.remove('panel-visible');
+    setTimeout(()=>{const w=document.getElementById('canvas-wrap');resizeCanvas(w.clientWidth,w.clientHeight);applyThemeColors()},80);
+  });
+
+  // Keyboard — physical key codes (layout-independent)
+  document.addEventListener('keydown',handleKey);
+
+  updateMuteBtn();
+  updateControls();
+}
+
+function togglePopup(id){
+  const menu=document.getElementById(id);
+  const was=menu.classList.contains('open');
+  // close all
+  document.querySelectorAll('.popup-menu').forEach(el=>{
+    el.classList.remove('open');
+    el.style.left='';el.style.top='';
+  });
+  if(was)return;
+  // find trigger button (sibling btn-icon inside same popup-wrap)
+  const wrap=menu.closest('.popup-wrap');
+  const btn=wrap?wrap.querySelector('.btn-icon'):null;
+  menu.classList.add('open');
+  // position after display so we know menu dimensions
+  requestAnimationFrame(()=>{
+    const mw=menu.offsetWidth, mh=menu.offsetHeight;
+    let left, top;
+    if(btn){
+      const r=btn.getBoundingClientRect();
+      left=r.left+r.width/2-mw/2;
+      top=r.top-mh-6;
+    } else {
+      left=window.innerWidth/2-mw/2;
+      top=100;
+    }
+    // clamp to viewport
+    left=Math.max(4,Math.min(left,window.innerWidth-mw-4));
+    top=Math.max(4,top);
+    menu.style.left=left+'px';
+    menu.style.top=top+'px';
+  });
+}
+
+// ═══ DRAW ════════════════════════════════════════════════════════════
+function draw(){
+  background(canvasBg);
+  if(isDraggingSplit)cursor('ew-resize');
+  else if(isPanning)cursor('grabbing');
+  else if(hoveredIdx!==-1&&!isDragging)cursor('grab');
+  else if(mediaElements.length===0)cursor('pointer');
+  else cursor('default');
+
+  updateHovered();
+
+  if(mediaElements.length===0&&!isDragging){
+    textAlign(CENTER,CENTER);textSize(18);noStroke();fill(canvasText);
+    text(LC.dragdrop,width/2,height/2);
+    return;
+  }
+  if(splitActive&&mediaElements.length===2)drawSplitView();
+  else drawGrid();
+
+  if(isDragging&&draggedMedia){
+    const el=draggedMedia.elt;
+    const rw=el.width||(el.elt&&el.elt.naturalWidth)||120;
+    const rh=el.height||(el.elt&&el.elt.naturalHeight)||80;
+    if(rw>0){const pw=120,ph=pw/(rw/rh);image(el,mouseX-pw/2,mouseY-ph/2,pw,ph)}
+  }
+  if(masterVideo&&!isSeeking)updateTimeline();
+}
+
+// ═══ SPLIT ════════════════════════════════════════════════════════════
+function drawSplitView(){
+  const sp=splitPos*width;
+  const m0=mediaElements[0],m1=mediaElements[1];
+  if(!m0||!m1)return;
+  drawingContext.save();
+  drawingContext.beginPath();drawingContext.rect(0,0,sp,height);drawingContext.clip();
+  drawMediaFill(m0);
+  drawingContext.restore();
+  drawingContext.save();
+  drawingContext.beginPath();drawingContext.rect(sp,0,width-sp,height);drawingContext.clip();
+  drawMediaFill(m1);
+  drawingContext.restore();
+  drawSplitLabel(m0.name||'Media 1',6,5,sp-12);
+  drawSplitLabel(m1.name||'Media 2',sp+6,5,width-sp-12);
+}
+function drawMediaFill(med){
+  const el=med.elt;
+  const mw=el.width||(el.elt&&el.elt.naturalWidth)||0;
+  const mh=el.height||(el.elt&&el.elt.naturalHeight)||0;
+  if(!mw||!mh)return;
+  const sw=mw/zoomLevel,sh=mh/zoomLevel;
+  const sx=(mw-sw)/2+panX,sy=(mh-sh)/2+panY;
+  // cover: fill the full canvas height; clipping region handles left/right boundary
+  const ma=sw/sh;
+  const dh=height, dw=height*ma;
+  image(el,(width-dw)/2,(height-dh)/2,dw,dh,sx,sy,sw,sh);
+}
+function drawSplitLabel(name,x,y,maxW){
+  push();textAlign(LEFT,TOP);textSize(11);noStroke();
+  while(textWidth(name+'…')>maxW-8&&name.length>1)name=name.slice(0,-1);
+  const tw=min(textWidth(name)+10,maxW),th=20;
+  fill(0,0,0,170);rect(x,y,tw,th,3);
+  fill(255);text(name,x+5,y+4);
+  pop();
+}
+
+// ═══ GRID ════════════════════════════════════════════════════════════
+function drawGrid(){
+  let cols=gridCols||1,rows=gridRows||1;
+  if(!gridCols||!gridRows){
+    const g=bestGrid(mediaElements.length+(isDragging?1:0),width/height);
+    cols=g.cols;rows=g.rows;
+  }
+  const cw=width/cols,ch=height/rows;
+  const dropIdx=isDragging?floor(mouseX/cw)+floor(mouseY/ch)*cols:-1;
+  gridLayout=[];
+  let mi=0;
+  for(let i=0;i<cols*rows;i++){
+    const r=floor(i/cols),c=i%cols;
+    if(isDragging&&i===dropIdx){noStroke();fill(255,255,255,22);rect(c*cw,r*ch,cw,ch,5);continue}
+    if(mi>=mediaElements.length)continue;
+    const med=mediaElements[mi],el=med.elt;
+    const rw=el.width||(el.elt&&el.elt.naturalWidth)||0;
+    const rh=el.height||(el.elt&&el.elt.naturalHeight)||0;
+    if(rw>0&&rh>0){
+      const sw=rw/zoomLevel,sh=rh/zoomLevel;
+      const sx=(rw-sw)/2+panX,sy=(rh-sh)/2+panY;
+      const ca=cw/ch,ma=sw/sh;
+      const dw=ca>ma?ch*ma:cw,dh=ca>ma?ch:cw/ma;
+      const x=c*cw+(cw-dw)/2,y=r*ch+(ch-dh)/2;
+      image(el,x,y,dw,dh,sx,sy,sw,sh);
+      const pos={x,y,w:dw,h:dh};
+      gridLayout[mi]=pos;
+      if(mi===hoveredIdx&&!isDragging)drawOverlay(med,pos);
+      if(med.type==='video')drawSoundDot(med,pos);
+    }
+    mi++;
+  }
+}
+
+function drawOverlay(med,pos){
+  const xs=22,pad=5;
+  push();textAlign(LEFT,TOP);textSize(11);noStroke();
+  let name=med.name;
+  const maxW=pos.w-xs-pad*3;
+  while(textWidth(name+'…')>maxW&&name.length>1)name=name.slice(0,-1);
+  if(name!==med.name)name+='…';
+  const tw=textWidth(name)+pad*2,th=14+pad*2;
+  fill(0,0,0,180);rect(pos.x,pos.y,tw,th,3,0,3,0);
+  fill(255);text(name,pos.x+pad,pos.y+pad+1);
+  const bx=pos.x+pos.w-xs,by=pos.y;
+  fill(0,0,0,180);rect(bx,by,xs,xs,0,3,0,3);
+  fill(255);textAlign(CENTER,CENTER);textSize(14);text('×',bx+xs/2,by+xs/2);
+  pop();
+}
+
+function drawSoundDot(med,pos){
+  const bs=22,pad=4;
+  const bx=pos.x+pos.w-bs-pad, by=pos.y+pos.h-bs-pad;
+  push(); noStroke();
+  fill(med.muted?color(30,30,30,210):color(0,229,160,220));
+  rect(bx,by,bs,bs,4);
+  // speaker body
+  const cx=bx+bs*0.42, cy=by+bs/2;
+  const sw=bs*0.13, sh=bs*0.18;
+  fill(med.muted?color(120,120,120):color(0,0,0)); noStroke();
+  // trapezoid: cone shape
+  beginShape();
+    vertex(cx-sw,   cy-sh*0.8);
+    vertex(cx,      cy-sh*1.5);
+    vertex(cx,      cy+sh*1.5);
+    vertex(cx-sw,   cy+sh*0.8);
+  endShape(CLOSE);
+  // rectangle body
+  rectMode(CORNER);
+  rect(cx-sw*3.2, cy-sh*0.8, sw*2.2, sh*1.6, 1);
+  rectMode(CORNER);
+  if(med.muted){
+    // X mark
+    stroke(200,60,60); strokeWeight(1.5); noFill();
+    const x1=bx+bs*0.62,y1=by+bs*0.28,x2=bx+bs*0.88,y2=by+bs*0.72;
+    line(x1,y1,x2,y2); line(x2,y1,x1,y2);
+  } else {
+    // two arcs = sound waves
+    noFill(); stroke(0,0,0,210); strokeWeight(1.4);
+    const ax=cx+sw*0.5;
+    arc(ax,cy, bs*0.22,bs*0.38, -PI*0.4,PI*0.4);
+    arc(ax,cy, bs*0.38,bs*0.6,  -PI*0.45,PI*0.45);
+  }
+  pop();
+}
+
+function updateHovered(){
+  if(isDragging||isPanning||splitActive||isDraggingSplit){hoveredIdx=-1;return}
+  hoveredIdx=-1;
+  for(let i=0;i<gridLayout.length;i++){
+    const p=gridLayout[i];
+    if(p&&mouseX>p.x&&mouseX<p.x+p.w&&mouseY>p.y&&mouseY<p.y+p.h){hoveredIdx=i;break}
+  }
+}
+
+function bestGrid(n,aspect){
+  if(!n)return{cols:1,rows:1};
+  let best={cols:n,rows:1},minD=Infinity;
+  for(let c=1;c<=n;c++){const r=Math.ceil(n/c),d=Math.abs(c/r-aspect);if(d<minD){minD=d;best={cols:c,rows:r}}}
+  return best;
+}
+
+// ═══ TIMELINE ════════════════════════════════════════════════════════
+function updateTimeline(){
+  if(!masterVideo||isSeeking)return;
+  const d=masterVideo.duration(),t=masterVideo.time();
+  if(isNaN(d)||!d)return;
+  const fps=parseFloat(frameRateInput.value())||24;
+  const fd=1/fps;
+  if(t>=d-fd){
+    if(isLooping){
+      isSeeking=true;videos.forEach(v=>v.pause());
+      let done=0;const tot=videos.length;
+      if(!tot){isSeeking=false;return}
+      videos.forEach(v=>{
+        v.elt.onseeked=()=>{done++;v.elt.onseeked=null;if(done===tot){if(isPlaying)videos.forEach(vv=>vv.play());isSeeking=false}};
+        v.time(0);
+      });return;
+    } else {if(isPlaying)togglePlayPause();videos.forEach(v=>v.time(v.duration()))}
+  } else if(isPlaying){
+    videos.forEach(v=>{if(v!==masterVideo&&t>=v.duration()&&!v.elt.paused){v.pause();v.time(v.duration())}});
+  }
+  const ct=masterVideo.time();
+  document.getElementById('seek-slider').value=(ct/d)*1000;
+  document.getElementById('timecode').textContent=fmtTime(ct)+' / '+fmtTime(d);
+  document.getElementById('frame-counter').textContent=Math.round(ct*fps)+' / '+Math.round(d*fps);
+}
+
+function fmtTime(t){
+  if(isNaN(t)||t===Infinity)return'00:00.00';
+  const m=floor(t/60),s=floor(t%60),h=floor((t%1)*100);
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+'.'+String(h).padStart(2,'0');
+}
+
+function updateControls(){
+  const hv=!!masterVideo;
+  const hasMedia=mediaElements.length>0;
+  ['play-btn','prev-btn','next-btn','seek-slider','speed-btn','loop-btn'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.disabled=!hv;
+  });
+  ['zoom-btn','mute-btn'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.disabled=!hasMedia;
+  });
+  document.getElementById('clear-btn').disabled=!hasMedia;
+  const sb=document.getElementById('split-btn');
+  sb.disabled=mediaElements.length!==2;
+  if(mediaElements.length!==2&&splitActive){splitActive=false;document.body.classList.remove('split-active');sb.classList.remove('active')}
+}
+
+function updateMuteBtn(){
+  const btn=document.getElementById('mute-btn');
+  btn.innerHTML=globalMuted?ICONS.mute:ICONS.vol;
+  btn.classList.toggle('active',globalMuted);
+  btn.title=LC.t_mute;
+}
+
+// ═══ THEME ════════════════════════════════════════════════════════════
+function initTheme(){document.body.classList.toggle('light',localStorage.getItem('theme')==='light');applyTheme()}
+function toggleTheme(){
+  document.body.classList.toggle('light');
+  localStorage.setItem('theme',document.body.classList.contains('light')?'light':'dark');
+  applyTheme();
+}
+function applyTheme(){
+  document.getElementById('theme-btn').innerHTML=document.body.classList.contains('light')?ICONS.moon:ICONS.sun;
+  applyThemeColors();
+}
+function applyThemeColors(){
+  const s=getComputedStyle(document.body);
+  canvasBg=color(s.getPropertyValue('--canvas-bg').trim());
+  canvasText=color(s.getPropertyValue('--muted').trim());
+  select('#canvas-wrap').style('border-color',s.getPropertyValue('--canvas-br').trim());
+}
+
+// ═══ I18N APPLY ════════════════════════════════════════════════════════
+function applyLang(){
+  document.getElementById('play-btn').textContent=LC.play;
+  document.getElementById('import-btn').textContent=LC.import;
+  document.getElementById('lbl-rows').textContent=LC.rows;
+  document.getElementById('lbl-fps').textContent=LC.fps;
+  document.getElementById('lbl-speed').textContent=LC.speed;
+  document.getElementById('lbl-zoom').textContent=LC.zoom;
+  document.getElementById('fs-hint').textContent=LC.fs_hint;
+  document.getElementById('help-title').textContent=LC.help_title;
+  document.getElementById('help-foot').textContent=LC.help_foot;
+  document.getElementById('loop-btn').title=LC.t_loop;
+  document.getElementById('prev-btn').title=LC.t_prev;
+  document.getElementById('next-btn').title=LC.t_next;
+  document.getElementById('split-btn').title=LC.t_split;
+  document.getElementById('theme-btn').title=LC.t_theme;
+  document.getElementById('help-btn').title=LC.t_help;
+  document.getElementById('clear-btn').title=LC.t_clear;
+  document.getElementById('speed-btn').title=LC.t_speed;
+  document.getElementById('zoom-btn').title=LC.t_zoom;
+  const pb=document.getElementById('panel-btn');if(pb)pb.title=LC.t_panel||'Panel (P)';
+}
+
+function buildHelp(){
+  const g=document.getElementById('hgrid');g.innerHTML='';
+  for(const[k,v]of LC.keys){
+    if(v===null) g.innerHTML+=`<div class="hs">${k}</div>`;
+    else g.innerHTML+=`<span class="hk">${k}</span><span class="hd">${v}</span>`;
+  }
+}
+function openHelp(){document.getElementById('help-modal').classList.add('open')}
+function closeHelp(){document.getElementById('help-modal').classList.remove('open')}
+
+// ═══ MEDIA ════════════════════════════════════════════════════════════
+function handleFileInput(e){
+  const files=e.target.files;if(!files)return;
+  for(const f of files){
+    const type=f.type.startsWith('video/')?'video':f.type.startsWith('image/')?'image':null;
+    if(!type)continue;
+    handleFile({type,data:URL.createObjectURL(f),name:f.name});
+  }
+  e.target.value='';
+}
+
+function handleFile(file){
+  let el;
+  if(file.type==='video'){
+    const first=videos.length===0;
+    el=createVideo(file.data,()=>{
+      el.volume(globalMuted?0:1);
+      el.speed(playbackRate);
+      el.time(min(masterVideo?masterVideo.time():0,el.duration()));
+      el._name=file.name;
+      findMaster();
+      if(first)togglePlayPause();
+      else if(isPlaying&&el.time()<el.duration())el.play();else el.pause();
+      updateTimeline();
+    });
+    el._name=file.name;
+    videos.push(el);
+  } else if(file.type==='image'){
+    el=createImg(file.data);
+  } else {
+    select('#canvas-wrap').style('border-style','dashed');return;
+  }
+  el.hide();
+  mediaElements.push({elt:el,type:file.type,name:file.name,muted:globalMuted});
+  autoLayout();updateControls();
+  select('#canvas-wrap').style('border-style','dashed');
+}
+
+function findMaster(){
+  if(!videos.length){
+    masterVideo=null;
+    if(isPlaying){isPlaying=false;document.getElementById('play-btn').textContent=LC.play}
+  } else {
+    masterVideo=videos.reduce((a,b)=>a.duration()>b.duration()?a:b);
+  }
+  updateControls();
+}
+
+function clearAll(){
+  if(isPlaying)togglePlayPause();
+  mediaElements.forEach(m=>m.elt.remove());
+  mediaElements=[];videos=[];gridLayout=[];masterVideo=null;
+  hoveredIdx=-1;isDragging=false;draggedMedia=null;isPlaying=false;
+  panX=0;panY=0;zoomLevel=1.0;
+  document.getElementById('zoom-slider').value=1;
+  document.getElementById('zoom-disp').textContent='1.0×';
+  playbackRate=1.0;
+  document.getElementById('speed-slider').value=4;
+  document.getElementById('speed-disp').textContent='1.00×';
+  isLooping=true;select('#loop-btn').addClass('active');
+  splitActive=false;document.body.classList.remove('split-active');
+  document.getElementById('split-btn').classList.remove('active');
+  updateControls();
+  document.getElementById('seek-slider').value=0;
+  document.getElementById('timecode').textContent='00:00.00 / 00:00.00';
+  document.getElementById('frame-counter').textContent='0 / 0';
+  document.getElementById('play-btn').textContent=LC.play;
+  autoLayout();
+}
+
+// ═══ PLAYBACK ════════════════════════════════════════════════════════
+function togglePlayPause(){
+  if(!masterVideo)return;
+  const t=masterVideo.time(),d=masterVideo.duration();
+  const fd=1/(parseFloat(frameRateInput.value())||24);
+  if(!isPlaying&&!isLooping&&t>=d-fd){
+    videos.forEach(v=>{v.time(0);v.play()});
+    isPlaying=true;document.getElementById('play-btn').textContent=LC.pause;return;
+  }
+  isPlaying=!isPlaying;
+  if(isPlaying){
+    videos.forEach(v=>{if(v.time()<v.duration())v.play()});
+    document.getElementById('play-btn').textContent=LC.pause;
+  } else {
+    videos.forEach(v=>v.pause());
+    document.getElementById('play-btn').textContent=LC.play;
+  }
+}
+
+// Frame step with synchronised seek-all
+function stepFrame(dir){
+  if(!masterVideo)return;
+  if(isPlaying)togglePlayPause();
+  const fps=parseFloat(frameRateInput.value())||24;
+  const nt=constrain(masterVideo.time()+dir/fps,0,masterVideo.duration());
+  isSeeking=true;
+  let done=0,tot=videos.length;
+  if(!tot){isSeeking=false;return}
+  videos.forEach(v=>{
+    const vt=constrain(nt,0,v.duration());
+    v.elt.onseeked=()=>{done++;v.elt.onseeked=null;if(done===tot)isSeeking=false};
+    v.time(vt);
+  });
+}
+
+function toggleLooping(){
+  isLooping=!isLooping;
+  const btn=select('#loop-btn');
+  if(isLooping){btn.addClass('active');if(!isPlaying&&masterVideo)togglePlayPause()}
+  else btn.removeClass('active');
+}
+
+function doSeek(){
+  if(!masterVideo)return;
+  const d=masterVideo.duration();if(isNaN(d))return;
+  const t=(document.getElementById('seek-slider').value/1000)*d;
+  videos.forEach(v=>v.pause());
+  let done=0,total=videos.length;
+  const onDone=()=>{if(isPlaying)videos.forEach(v=>{if(v.time()<v.duration())v.play()})};
+  if(!total){onDone();return}
+  videos.forEach(v=>{
+    const nt=min(t,v.duration());
+    v.elt.onseeked=()=>{done++;v.elt.onseeked=null;if(done===total)onDone()};
+    v.time(nt);
+  });
+}
+
+function onSpeedChange(){
+  playbackRate=SPEEDS[parseInt(document.getElementById('speed-slider').value)];
+  document.getElementById('speed-disp').textContent=playbackRate.toFixed(2)+'×';
+  videos.forEach(v=>v.speed(playbackRate));
+}
+
+// ═══ MUTE ════════════════════════════════════════════════════════════
+function toggleGlobalMute(){
+  globalMuted=!globalMuted;
+  videos.forEach(v=>v.volume(globalMuted?0:1));
+  mediaElements.forEach(m=>{if(m.type==='video')m.muted=globalMuted});
+  updateMuteBtn();
+}
+
+function checkSoundDotClick(){
+  const bs=22,pad=4;
+  for(let i=0;i<gridLayout.length;i++){
+    const med=mediaElements[i];if(!med||med.type!=='video')continue;
+    const pos=gridLayout[i];if(!pos)continue;
+    const bx=pos.x+pos.w-bs-pad, by=pos.y+pos.h-bs-pad;
+    if(mouseX>=bx&&mouseX<=bx+bs&&mouseY>=by&&mouseY<=by+bs){
+      med.muted=!med.muted;
+      med.elt.volume(med.muted?0:1);
+      return true;
+    }
+  }
+  return false;
+}
+
+// ═══ SPLIT ════════════════════════════════════════════════════════════
+function toggleSplit(){
+  if(mediaElements.length!==2)return;
+  splitActive=!splitActive;
+  document.body.classList.toggle('split-active',splitActive);
+  document.getElementById('split-btn').classList.toggle('active',splitActive);
+}
+
+// ═══ ZOOM / PAN ════════════════════════════════════════════════════════
+function onZoom(){
+  zoomLevel=parseFloat(document.getElementById('zoom-slider').value);
+  document.getElementById('zoom-disp').textContent=zoomLevel.toFixed(1)+'×';
+  clampPan();
+}
+function clampPan(){
+  if(!mediaElements.length){panX=panY=0;return}
+  const el=mediaElements[0].elt;
+  const mw=el.width||(el.elt&&el.elt.naturalWidth)||0;
+  const mh=el.height||(el.elt&&el.elt.naturalHeight)||0;
+  if(!mw){panX=panY=0;return}
+  const mx=(mw-mw/zoomLevel)/2,my=(mh-mh/zoomLevel)/2;
+  panX=mx>=0?constrain(panX,-mx,mx):0;
+  panY=my>=0?constrain(panY,-my,my):0;
+}
+function handleWheel(e){
+  if(mouseX<0||mouseX>width||mouseY<0||mouseY>height)return;
+  const spd=0.1,old=zoomLevel;
+  zoomLevel+=e.deltaY<0?spd*old:-spd*old;
+  const sl=document.getElementById('zoom-slider');
+  zoomLevel=constrain(zoomLevel,parseFloat(sl.min),parseFloat(sl.max));
+  if(mediaElements.length){
+    const el=mediaElements[0].elt,mw=el.width||0,mh=el.height||0;
+    if(mw>0){
+      const wX=(panX+(mw-mw/old)/2)+(mouseX/width)*(mw/old);
+      const wY=(panY+(mh-mh/old)/2)+(mouseY/height)*(mh/old);
+      panX=wX-(mouseX/width)*(mw/zoomLevel)-(mw-mw/zoomLevel)/2;
+      panY=wY-(mouseY/height)*(mh/zoomLevel)-(mh-mh/zoomLevel)/2;
+    }
+  }
+  clampPan();
+  sl.value=zoomLevel;
+  document.getElementById('zoom-disp').textContent=zoomLevel.toFixed(1)+'×';
+  return false;
+}
+
+// ═══ GRID LAYOUT ═════════════════════════════════════════════════════
+function setRows(n){
+  if(!mediaElements.length)return;
+  gridRows=n;gridCols=Math.ceil(mediaElements.length/n);
+  [1,2,3,4].forEach(i=>document.getElementById('r'+i).classList.toggle('active',i===n));
+}
+function autoLayout(){
+  gridCols=0;gridRows=0;
+  [1,2,3,4].forEach(i=>document.getElementById('r'+i).classList.remove('active'));
+}
+
+// ═══ MOUSE ════════════════════════════════════════════════════════════
+function mousePressed(){
+  if(isDraggingSlider||isDraggingSplit)return;
+  if(mediaElements.length===0&&mouseX>0&&mouseX<width&&mouseY>0&&mouseY<height){
+    if(mouseButton===LEFT)document.getElementById('file-input').click();
+    return;
+  }
+  if(mouseButton===CENTER&&mouseX>0&&mouseX<width&&mouseY>0&&mouseY<height){
+    isPanning=true;lastMX=mouseX;lastMY=mouseY;return;
+  }
+  if(mouseButton!==LEFT||isDragging)return;
+  if(!splitActive&&checkSoundDotClick())return;
+  if(hoveredIdx!==-1&&!splitActive){
+    const pos=gridLayout[hoveredIdx],xs=22;
+    if(mouseX>pos.x+pos.w-xs&&mouseX<pos.x+pos.w&&mouseY>pos.y&&mouseY<pos.y+xs){
+      const rem=mediaElements.splice(hoveredIdx,1)[0];
+      if(rem.type==='video'){videos=videos.filter(v=>v!==rem.elt);findMaster()}else updateControls();
+      rem.elt.remove();hoveredIdx=-1;autoLayout();return;
+    }
+    isDragging=true;draggedMedia=mediaElements.splice(hoveredIdx,1)[0];
+  }
+}
+function mouseDragged(){
+  if(isDraggingSlider||isDraggingSplit)return;
+  if(isPanning){
+    panX-=mouseX-lastMX;panY-=mouseY-lastMY;
+    lastMX=mouseX;lastMY=mouseY;clampPan();return false;
+  }
+}
+function mouseReleased(){
+  isDraggingSlider=false;
+  if(isPanning){isPanning=false;return}
+  if(!isDragging||!draggedMedia){isDragging=false;return}
+  const g=(gridCols&&gridRows)?{cols:gridCols,rows:gridRows}:bestGrid(mediaElements.length+1,width/height);
+  const cw=width/g.cols,ch=height/g.rows;
+  let ti=constrain(floor(mouseX/cw),0,g.cols-1)+constrain(floor(mouseY/ch),0,g.rows-1)*g.cols;
+  ti=min(ti,mediaElements.length);
+  mediaElements.splice(ti,0,draggedMedia);
+  isDragging=false;draggedMedia=null;
+}
+
+// ═══ KEYBOARD — physical key codes ════════════════════════════════════
+function handleKey(e){
+  if(document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='TEXTAREA')return;
+  const helpOpen=document.getElementById('help-modal').classList.contains('open');
+  if(helpOpen){if(e.code==='Escape')closeHelp();return}
+  switch(e.code){
+    case'Space':e.preventDefault();togglePlayPause();break;
+    case'ArrowLeft':e.preventDefault();stepFrame(-1);break;
+    case'ArrowRight':e.preventDefault();stepFrame(1);break;
+    case'KeyF':case'F11':e.preventDefault();toggleFullscreen();break;
+    case'KeyP':togglePanel();break;
+    case'KeyH':openHelp();break;
+    case'KeyI':document.getElementById('file-input').click();break;
+    case'KeyT':toggleTheme();break;
+    case'Digit1':setRows(1);break;
+    case'Digit2':setRows(2);break;
+    case'Digit3':setRows(3);break;
+    case'Digit4':setRows(4);break;
+    case'Digit5':clearAll();break;
+    case'Digit6':toggleLooping();break;
+    case'Digit7':togglePopup('speed-menu');break;
+    case'Digit8':togglePopup('zoom-menu');break;
+    case'Digit9':toggleSplit();break;
+    case'Digit0':toggleGlobalMute();break;
+  }
+}
+// Disable p5 keyPressed to avoid double-firing
+function keyPressed(){return true}
+
+function togglePanel(){
+  const isFs=document.body.classList.contains('fs-mode');
+  const hint=document.getElementById('fs-hint');
+  if(isFs){
+    // In fullscreen: show panel as overlay at bottom
+    const vis=document.body.classList.toggle('panel-visible');
+    if(hint)hint.textContent=vis?'':LC.fs_hint;
+  } else {
+    const hidden=document.body.classList.toggle('panel-hidden');
+    if(hint)hint.textContent=hidden?'P — '+LC.t_panel:'';
+  }
+}
+function toggleFullscreen(){
+  if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});
+  else document.exitFullscreen();
+}
+function windowResized(){/* handled by ResizeObserver */}
+</script>
+</body>
+</html>
