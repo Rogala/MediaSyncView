@@ -35,6 +35,7 @@ Download p5.min.js from the official CDN:
 ```
 https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js
 ```
+https://github.com/user-attachments/assets/c969f33a-0c94-4264-bf60-ba21c770c72a
 
 ---
 
@@ -52,7 +53,7 @@ Browser support for specific codecs varies. MP4/H.264 and WebM/VP9 have the wide
 
 ---
 
-
+https://github.com/user-attachments/assets/3c3ec736-a75d-4366-97ba-30734cb4bfe8
 
 ## Keyboard shortcuts
 
