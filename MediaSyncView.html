@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- MediaSyncView v1.0 · https://github.com/Rogala/MediaSyncView -->
+<!-- MediaSyncView v2.0 · https://github.com/Rogala/MediaSyncView -->
 <!-- Based on MediaSyncer by WhatDreamsCost, GPL-3.0 · https://github.com/WhatDreamsCost/MediaSyncer -->
 <title>MediaSyncView</title>
 <meta name="description" content="MediaSyncView: Compare AI images &amp; videos with perfectly synchronized zoom and playback.">
@@ -31,8 +31,11 @@
   --blue:#3b82f6;--blue-h:#60a5fa;
   --green:#00e5a0;--green-h:#00ffb2;
   --red:#ef4444;--red-h:#f87171;
+  --orange:#f59e0b;--orange-h:#fbbf24;
+  --indigo:#6366f1;--indigo-h:#818cf8;
   --canvas-bg:#000;--canvas-br:#2a2f38;
   --glow-b:rgba(59,130,246,.25);--glow-g:rgba(0,229,160,.25);--glow-r:rgba(239,68,68,.25);
+  --glow-o:rgba(245,158,11,.25);--glow-i:rgba(99,102,241,.25);
 }
 body.light{
   --bg:#f0f2f5;--surface:#fff;--surface2:#f7f8fa;--border:#dde1e8;
@@ -105,11 +108,12 @@ body.panel-hidden{gap:0}
 
 /* Buttons */
 .btn{
-  font-family:'Syne',sans-serif;font-weight:600;font-size:.78rem;
-  padding:.35rem .8rem;border-radius:.4rem;border:1px solid transparent;
+  font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;
+  padding:.42rem .95rem;border-radius:.4rem;border:1px solid transparent;
   cursor:pointer;white-space:nowrap;transition:all var(--tt);
   background:var(--blue);color:#fff;flex-shrink:0;user-select:none;
 }
+body.light .btn{color:#fff}
 .btn:hover{background:var(--blue-h);transform:translateY(-1px);box-shadow:0 0 12px var(--glow-b)}
 .btn:active{transform:translateY(0)}
 .btn:disabled{
@@ -117,30 +121,45 @@ body.panel-hidden{gap:0}
   cursor:not-allowed;opacity:.5;transform:none!important;box-shadow:none!important;
 }
 .btn-icon{
-  padding:.35rem .42rem;display:flex;align-items:center;justify-content:center;
-  background:var(--surface2);color:var(--text);border-color:var(--border);
+  padding:.42rem .5rem;display:flex;align-items:center;justify-content:center;
+  background:var(--surface2);color:#fff;border:2px solid var(--border);
 }
+body.light .btn-icon{color:#000}
 .btn-icon:hover{background:var(--border);box-shadow:none;transform:translateY(-1px)}
-.btn-icon svg{width:1rem;height:1rem;pointer-events:none}
+body.light .btn-icon:hover{background:#c4cad8}
+.btn-icon svg{width:1.1rem;height:1.1rem;pointer-events:none}
 .btn-icon.active{background:var(--green);color:#000;border-color:transparent}
 .btn-icon.active:hover{background:var(--green-h);box-shadow:0 0 10px var(--glow-g)}
 .btn-green{background:var(--green);color:#000;border-color:transparent}
 .btn-green:hover{background:var(--green-h);box-shadow:0 0 12px var(--glow-g)}
 .btn-red{background:var(--red);color:#fff;border-color:transparent}
+body.light .btn-red{color:#fff}
 .btn-red:hover{background:var(--red-h);box-shadow:0 0 12px var(--glow-r)}
+.btn-orange{background:var(--orange);color:#000;border-color:transparent}
+.btn-orange:hover{background:var(--orange-h);box-shadow:0 0 12px var(--glow-o)}
+.btn-indigo{background:var(--indigo);color:#fff;border-color:transparent}
+.btn-indigo:hover{background:var(--indigo-h);box-shadow:0 0 12px var(--glow-i)}
+
+/* Mute button: green = sound on, red = muted */
+#mute-btn.mute-on{background:var(--green);color:#000;border-color:transparent}
+#mute-btn.mute-on:hover{background:var(--green-h);box-shadow:0 0 10px var(--glow-g)}
+#mute-btn.mute-off{background:var(--red);color:#fff;border-color:transparent}
+#mute-btn.mute-off:hover{background:var(--red-h);box-shadow:0 0 10px var(--glow-r)}
 
 /* Row buttons (1-4) */
-.row-btn{min-width:1.9rem;padding:.35rem .3rem;font-family:'JetBrains Mono',monospace;font-size:.8rem}
+.row-btn{min-width:2.1rem;padding:.42rem .35rem;font-family:'JetBrains Mono',monospace;font-size:.92rem}
 
 /* Number inputs */
 .num-input{
-  width:44px;background:var(--surface2);border:1px solid var(--border);
-  border-radius:.35rem;padding:.28rem .3rem;text-align:center;
-  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.8rem;
+  width:50px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:.35rem;padding:.32rem .3rem;text-align:center;
+  color:#fff;font-family:'JetBrains Mono',monospace;font-size:.92rem;font-weight:600;
   transition:border-color var(--tt);
 }
+body.light .num-input{color:#000}
 .num-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 6px var(--glow-b)}
-label.lbl{font-size:.7rem;font-weight:600;color:var(--muted);letter-spacing:.03em;flex-shrink:0}
+label.lbl{font-size:.78rem;font-weight:700;color:#fff;letter-spacing:.03em;flex-shrink:0}
+body.light label.lbl{color:#000}
 
 /* Sliders */
 input[type=range]{
@@ -173,9 +192,17 @@ input[type=range]:hover::-webkit-slider-thumb{box-shadow:0 0 8px var(--glow-b)}
 }
 
 /* Timecode */
-#time-block{display:flex;flex-direction:column;align-items:center;gap:.04rem;flex-shrink:0}
-#timecode{font-family:'JetBrains Mono',monospace;font-size:.88rem;color:var(--muted);letter-spacing:.04em}
-#frame-counter{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:var(--muted);opacity:.6}
+#time-block{display:flex;flex-direction:row;align-items:center;gap:.5rem;flex-shrink:0}
+#timecode{font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:600;color:#fff;letter-spacing:.04em}
+body.light #timecode{color:#000}
+#frame-counter{font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:600;color:#fff}
+body.light #frame-counter{color:#000}
+
+/* Theme button — inverted: dark mode = white bg black icon, light = black bg white icon */
+#theme-btn{background:#fff;color:#000;border-color:#fff}
+#theme-btn:hover{background:#e0e0e0;border-color:#e0e0e0;box-shadow:none}
+body.light #theme-btn{background:#000;color:#fff;border-color:#000}
+body.light #theme-btn:hover{background:#222;border-color:#222;box-shadow:none}
 
 /* Separator */
 .sep{width:1px;height:1.15rem;background:var(--border);flex-shrink:0}
@@ -249,7 +276,7 @@ body.panel-hidden #fs-hint{opacity:1}
     </div>
 
     <!-- Clear (5) -->
-    <button class="btn btn-red" id="clear-btn" style="padding:.3rem .5rem" data-i18n-title="t_clear">✕</button>
+    <button class="btn btn-red btn-icon" id="clear-btn" data-i18n-title="t_clear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
     <div class="sep"></div>
 
     <!-- Loop (6) -->
@@ -302,17 +329,17 @@ body.panel-hidden #fs-hint{opacity:1}
     </div>
     <div class="sep"></div>
 
-    <!-- FPS -->
+    <!-- FPS + frame counter -->
     <div class="pg">
       <label class="lbl" id="lbl-fps" data-i18n="fps">FPS</label>
-      <input type="number" id="fps-input" class="num-input" min="1" value="24" style="width:46px">
+      <input type="number" id="fps-input" class="num-input" min="1" value="24" style="width:50px">
+      <div id="frame-counter">0 / 0</div>
     </div>
 
     <!-- Seek + Timecode -->
     <input type="range" id="seek-slider" min="0" max="1000" value="0" disabled>
     <div id="time-block">
       <div id="timecode">00:00.00 / 00:00.00</div>
-      <div id="frame-counter">0 / 0</div>
     </div>
     <div class="sep"></div>
 
@@ -320,11 +347,11 @@ body.panel-hidden #fs-hint{opacity:1}
     <div class="pg">
       <input type="file" id="file-input" multiple accept="video/*,image/jpeg,image/png,image/gif,image/webp,image/avif,image/svg+xml,image/bmp,image/x-icon,image/apng">
       <button id="import-btn" class="btn" data-i18n="import">Import</button>
-      <button id="theme-btn" class="btn btn-icon btn-green" data-i18n-title="t_theme"></button>
-      <button id="help-btn" class="btn btn-icon btn-red" data-i18n-title="t_help">
+      <button id="theme-btn" class="btn btn-icon" data-i18n-title="t_theme"></button>
+      <button id="help-btn" class="btn btn-icon btn-orange" data-i18n-title="t_help">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
       </button>
-      <button id="panel-btn" class="btn btn-icon" data-i18n-title="t_panel">
+      <button id="panel-btn" class="btn btn-icon btn-indigo" data-i18n-title="t_panel">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
       </button>
     </div>
@@ -353,7 +380,7 @@ const I18N = {
     rows:'Rows',fps:'FPS',speed:'Speed',zoom:'Zoom',
     dragdrop:'Drag & Drop or click to import media',
     fs_hint:'F — exit fullscreen',
-    help_title:'MediaSyncView v1.0 — Shortcuts',
+    help_title:'MediaSyncView v2.0 — Shortcuts',
     help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
     t_loop:'Loop (6)',t_prev:'Prev frame (←)',t_next:'Next frame (→)',
     t_split:'Split View (9)',t_mute:'Mute all (0)',t_theme:'Theme (T)',
@@ -366,14 +393,14 @@ const I18N = {
           ['F / F11','Fullscreen'],['P','Toggle panel'],
           ['Other',null],
           ['I','Import'],['T','Theme'],['H','Help'],
-          ['Scroll','Zoom'],['Middle drag','Pan']]
+          ['Scroll','Zoom'],['Middle click','Fullscreen focus on media'],['Esc','Exit focus']]
   },
   de:{
     play:'Abspielen',pause:'Pause',import:'Importieren',
     rows:'Zeilen',fps:'FPS',speed:'Geschw.',zoom:'Zoom',
     dragdrop:'Medien hierher ziehen oder klicken',
     fs_hint:'F — Vollbild beenden',
-    help_title:'MediaSyncView v1.0 — Tastenkürzel',
+    help_title:'MediaSyncView v2.0 — Tastenkürzel',
     help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
     t_loop:'Wiederholen (6)',t_prev:'Voriges Bild (←)',t_next:'Nächstes Bild (→)',
     t_split:'Geteilte Ansicht (9)',t_mute:'Alle stummschalten (0)',t_theme:'Design (T)',
@@ -386,14 +413,14 @@ const I18N = {
           ['F / F11','Vollbild'],['P','Panel ein/aus'],
           ['Sonstiges',null],
           ['I','Importieren'],['T','Design'],['H','Hilfe'],
-          ['Scroll','Zoom'],['Mittlere Maus','Schwenken']]
+          ['Scroll','Zoom'],['Mittlere Maus','Medien vollbild fokussieren'],['Esc','Fokus beenden']]
   },
   fr:{
     play:'Lire',pause:'Pause',import:'Importer',
     rows:'Lignes',fps:'FPS',speed:'Vitesse',zoom:'Zoom',
     dragdrop:'Glisser-déposer ou cliquer pour importer',
     fs_hint:'F — quitter le plein écran',
-    help_title:'MediaSyncView v1.0 — Raccourcis',
+    help_title:'MediaSyncView v2.0 — Raccourcis',
     help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
     t_loop:'Boucle (6)',t_prev:'Image préc. (←)',t_next:'Image suiv. (→)',
     t_split:'Vue partagée (9)',t_mute:'Couper le son (0)',t_theme:'Thème (T)',
@@ -406,14 +433,14 @@ const I18N = {
           ['F / F11','Plein écran'],['P','Masquer panneau'],
           ['Autre',null],
           ['I','Importer'],['T','Thème'],['H','Aide'],
-          ['Scroll','Zoom'],['Clic central','Panoramique']]
+          ['Scroll','Zoom'],['Clic central','Plein écran sur le média'],['Esc','Quitter focus']]
   },
   es:{
     play:'Reproducir',pause:'Pausa',import:'Importar',
     rows:'Filas',fps:'FPS',speed:'Velocidad',zoom:'Zoom',
     dragdrop:'Arrastra o haz clic para importar',
     fs_hint:'F — salir de pantalla completa',
-    help_title:'MediaSyncView v1.0 — Atajos',
+    help_title:'MediaSyncView v2.0 — Atajos',
     help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
     t_loop:'Bucle (6)',t_prev:'Fotograma ant. (←)',t_next:'Fotograma sig. (→)',
     t_split:'Vista dividida (9)',t_mute:'Silenciar todo (0)',t_theme:'Tema (T)',
@@ -426,14 +453,14 @@ const I18N = {
           ['F / F11','Pantalla completa'],['P','Ocultar panel'],
           ['Otro',null],
           ['I','Importar'],['T','Tema'],['H','Ayuda'],
-          ['Scroll','Zoom'],['Clic central','Paneo']]
+          ['Scroll','Zoom'],['Clic central','Pantalla completa en el medio'],['Esc','Salir del foco']]
   },
   it:{
     play:'Riproduci',pause:'Pausa',import:'Importa',
     rows:'Righe',fps:'FPS',speed:'Velocità',zoom:'Zoom',
     dragdrop:'Trascina o clicca per importare',
     fs_hint:'F — esci dallo schermo intero',
-    help_title:'MediaSyncView v1.0 — Scorciatoie',
+    help_title:'MediaSyncView v2.0 — Scorciatoie',
     help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
     t_loop:'Ripeti (6)',t_prev:'Fotogr. prec. (←)',t_next:'Fotogr. succ. (→)',
     t_split:'Vista divisa (9)',t_mute:'Silenzia tutto (0)',t_theme:'Tema (T)',
@@ -446,14 +473,14 @@ const I18N = {
           ['F / F11','Schermo intero'],['P','Nascondi pannello'],
           ['Altro',null],
           ['I','Importa'],['T','Tema'],['H','Aiuto'],
-          ['Scroll','Zoom'],['Clic centrale','Panoramica']]
+          ['Scroll','Zoom'],['Clic centrale','Schermo intero sul media'],['Esc','Esci dal fuoco']]
   },
   pt:{
     play:'Reproduzir',pause:'Pausa',import:'Importar',
     rows:'Filas',fps:'FPS',speed:'Veloc.',zoom:'Zoom',
     dragdrop:'Arraste ou clique para importar mídia',
     fs_hint:'F — sair da tela cheia',
-    help_title:'MediaSyncView v1.0 — Atalhos',
+    help_title:'MediaSyncView v2.0 — Atalhos',
     help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
     t_loop:'Loop (6)',t_prev:'Frame ant. (←)',t_next:'Frame seg. (→)',
     t_split:'Split View (9)',t_mute:'Silenciar (0)',t_theme:'Tema (T)',
@@ -466,14 +493,14 @@ const I18N = {
           ['F / F11','Tela cheia'],['P','Painel'],
           ['Outros',null],
           ['I','Importar'],['T','Tema'],['H','Ajuda'],
-          ['Scroll','Zoom'],['Botão do meio','Panorâmica']]
+          ['Scroll','Zoom'],['Botão do meio','Tela cheia no média'],['Esc','Sair do foco']]
   },
   zh:{
     play:'播放',pause:'暂停',import:'导入',
     rows:'行',fps:'帧率',speed:'速度',zoom:'缩放',
     dragdrop:'拖放或点击导入媒体',
     fs_hint:'F — 退出全屏',
-    help_title:'MediaSyncView v1.0 — 快捷键',
+    help_title:'MediaSyncView v2.0 — 快捷键',
     help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
     t_loop:'循环 (6)',t_prev:'上一帧 (←)',t_next:'下一帧 (→)',
     t_split:'分屏 (9)',t_mute:'静音 (0)',t_theme:'主题 (T)',
@@ -486,14 +513,14 @@ const I18N = {
           ['F / F11','全屏'],['P','隐藏面板'],
           ['其他',null],
           ['I','导入'],['T','主题'],['H','帮助'],
-          ['滚轮','缩放'],['中键拖动','平移']]
+          ['滚轮','缩放'],['中键点击','全屏聚焦媒体'],['Esc','退出聚焦']]
   },
   ja:{
     play:'再生',pause:'一時停止',import:'インポート',
     rows:'行',fps:'FPS',speed:'速度',zoom:'ズーム',
     dragdrop:'ドラッグ＆ドロップ、またはクリックしてメディアを追加',
     fs_hint:'F — 全画面を終了',
-    help_title:'MediaSyncView v1.0 — ショートカット',
+    help_title:'MediaSyncView v2.0 — ショートカット',
     help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
     t_loop:'ループ (6)',t_prev:'前のフレーム (←)',t_next:'次のフレーム (→)',
     t_split:'分割表示 (9)',t_mute:'ミュート (0)',t_theme:'テーマ (T)',
@@ -506,35 +533,34 @@ const I18N = {
           ['F / F11','全画面'],['P','パネル'],
           ['その他',null],
           ['I','インポート'],['T','テーマ'],['H','ヘルプ'],
-          ['スクロール','ズーム'],['中ボタンドラッグ','パン']]
+          ['スクロール','ズーム'],['中ボタンクリック','メディアを全画面表示'],['Esc','フォーカス解除']]
   },
   uk:{
-    play:'Грати',pause:'Пауза',import:'Імпорт',
-    rows:'Ряди',fps:'FPS',speed:'Швидк.',zoom:'Масштаб',
+    play:'Пуск',pause:'Пауза',import:'Імпорт',
+    rows:'Рядки',fps:'FPS',speed:'Швидк.',zoom:'Масштаб',
     dragdrop:'Перетягніть або натисніть для імпорту',
     fs_hint:'F — вийти з повного екрану',
-    help_title:'MediaSyncView v1.0 — Гарячі клавіші',
+    help_title:'MediaSyncView v2.0 — Гарячі клавіші',
     help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
     t_loop:'Повтор (6)',t_prev:'Попередній кадр (←)',t_next:'Наступний кадр (→)',
-    t_split:'Split View (9)',t_mute:'Звук вкл/викл (0)',t_theme:'Тема (T)',
+    t_split:'Розділений вигляд (9)',t_mute:'Звук вкл/викл (0)',t_theme:'Тема (T)',
     t_help:'Довідка (H)',t_clear:'Очистити (5)',t_speed:'Швидкість (7)',t_zoom:'Масштаб (8)',t_panel:'Панель (P)',
     keys:[['Відтворення',null],
-          ['Пробіл','Грати / Пауза'],['← →','Покадрово'],
-          ['1','1 ряд'],['2','2 ряди'],['3','3 ряди'],['4','4 ряди'],
-          ['5','Очистити'],['6','Повтор'],['7','Швидкість'],['8','Масштаб'],['9','Split View'],['0','Звук вкл/викл'],
+          ['Пробіл','Пуск / Пауза'],['← →','Покадрово'],
+          ['1','1 рядок'],['2','2 рядки'],['3','3 рядки'],['4','4 рядки'],
+          ['5','Очистити'],['6','Повтор'],['7','Швидкість'],['8','Масштаб'],['9','Розділений вигляд'],['0','Звук вкл/викл'],
           ['Вигляд',null],
           ['F / F11','Повний екран'],['P','Сховати/показати панель'],
           ['Інше',null],
           ['I','Імпорт'],['T','Тема'],['H','Довідка'],
-          ['Scroll','Масштаб'],['Середня кнопка','Панорама']]
+          ['Scroll','Масштаб'],['Середня кнопка','Розгорнути медіа на весь екран'],['Esc','Вийти з фокусу']]
   }
 };
 // Language detection: browser sends "uk-UA", "pt-BR", "zh-CN" etc. — take base code only
 const LC=(()=>{
   const raw=(navigator.language||'en').toLowerCase();
   const base=raw.split('-')[0];
-  const alias={ua:'uk'};           // some browsers send 'ua' instead of 'uk'
-  return I18N[alias[base]||base]||I18N.en;
+  return I18N[base]||I18N.en;
 })();
 
 // ═══ ICONS ════════════════════════════════════════════════════════════
@@ -554,6 +580,7 @@ let isPanning=false,lastMX=0,lastMY=0,isDraggingSlider=false;
 let zoomLevel=1.0,panX=0,panY=0,playbackRate=1.0;
 let globalMuted=true;
 let splitActive=false,splitPos=0.5,isDraggingSplit=false;
+let focusedMedia=null;
 let canvasBg,canvasText;
 let frameRateInput;
 const SPEEDS=[0.1,0.25,0.5,0.75,1.0,1.25,1.5,1.75,2.0];
@@ -685,7 +712,7 @@ function togglePopup(id){
 function draw(){
   background(canvasBg);
   if(isDraggingSplit)cursor('ew-resize');
-  else if(isPanning)cursor('grabbing');
+  else if(focusedMedia)cursor('default');
   else if(hoveredIdx!==-1&&!isDragging)cursor('grab');
   else if(mediaElements.length===0)cursor('pointer');
   else cursor('default');
@@ -697,6 +724,7 @@ function draw(){
     text(LC.dragdrop,width/2,height/2);
     return;
   }
+  if(focusedMedia){drawFocused();return;}
   if(splitActive&&mediaElements.length===2)drawSplitView();
   else drawGrid();
 
@@ -743,6 +771,29 @@ function drawSplitLabel(name,x,y,maxW){
   const tw=min(textWidth(name)+10,maxW),th=20;
   fill(0,0,0,170);rect(x,y,tw,th,3);
   fill(255);text(name,x+5,y+4);
+  pop();
+}
+
+function drawFocused(){
+  if(!focusedMedia||!mediaElements.includes(focusedMedia)){focusedMedia=null;return}
+  const el=focusedMedia.elt;
+  const mw=el.width||(el.elt&&el.elt.naturalWidth)||0;
+  const mh=el.height||(el.elt&&el.elt.naturalHeight)||0;
+  if(!mw||!mh)return;
+  const ca=width/height,ma=mw/mh;
+  const dw=ca>ma?height*ma:width,dh=ca>ma?height:width/ma;
+  image(el,(width-dw)/2,(height-dh)/2,dw,dh);
+  // label з назвою файлу та підказкою виходу
+  push();noStroke();textAlign(LEFT,TOP);textSize(11);
+  const name=focusedMedia.name||'Media';
+  const hint='Esc / click to exit';
+  const pad=5;
+  fill(0,0,0,170);rect(0,0,textWidth(name)+pad*2+2,20,0,0,3,0);
+  fill(255);text(name,pad,pad);
+  textAlign(RIGHT,TOP);fill(0,0,0,170);
+  const hw=textWidth(hint)+pad*2;
+  rect(width-hw,0,hw,20,0,0,0,3);
+  fill(200,200,200);text(hint,width-pad,pad);
   pop();
 }
 
@@ -833,7 +884,7 @@ function drawSoundDot(med,pos){
 }
 
 function updateHovered(){
-  if(isDragging||isPanning||splitActive||isDraggingSplit){hoveredIdx=-1;return}
+  if(isDragging||splitActive||isDraggingSplit){hoveredIdx=-1;return}
   hoveredIdx=-1;
   for(let i=0;i<gridLayout.length;i++){
     const p=gridLayout[i];
@@ -898,7 +949,9 @@ function updateControls(){
 function updateMuteBtn(){
   const btn=document.getElementById('mute-btn');
   btn.innerHTML=globalMuted?ICONS.mute:ICONS.vol;
-  btn.classList.toggle('active',globalMuted);
+  btn.classList.toggle('mute-on',!globalMuted);
+  btn.classList.toggle('mute-off',globalMuted);
+  btn.classList.remove('active');
   btn.title=LC.t_mute;
 }
 
@@ -967,8 +1020,30 @@ function handleFile(file){
       el.time(min(masterVideo?masterVideo.time():0,el.duration()));
       el._name=file.name;
       findMaster();
-      if(first)togglePlayPause();
-      else if(isPlaying&&el.time()<el.duration())el.play();else el.pause();
+      if(first){
+        togglePlayPause();
+        // Auto-detect FPS from first video via requestVideoFrameCallback
+        if(first&&typeof el.elt.requestVideoFrameCallback==='function'){
+          const times=[];
+          const cb=(now,meta)=>{
+            times.push(meta.mediaTime);
+            if(times.length<12){el.elt.requestVideoFrameCallback(cb);return}
+            // calc median interval from 10 gaps
+            const gaps=[];
+            for(let i=1;i<times.length;i++)gaps.push(times[i]-times[i-1]);
+            gaps.sort((a,b)=>a-b);
+            const med=gaps[Math.floor(gaps.length/2)];
+            if(med>0){
+              const detected=Math.round(1/med);
+              // only apply if reasonable value
+              if(detected>=8&&detected<=240){
+                document.getElementById('fps-input').value=detected;
+              }
+            }
+          };
+          el.elt.requestVideoFrameCallback(cb);
+        }
+      } else if(isPlaying&&el.time()<el.duration())el.play();else el.pause();
       updateTimeline();
     });
     el._name=file.name;
@@ -998,10 +1073,11 @@ function clearAll(){
   if(isPlaying)togglePlayPause();
   mediaElements.forEach(m=>m.elt.remove());
   mediaElements=[];videos=[];gridLayout=[];masterVideo=null;
-  hoveredIdx=-1;isDragging=false;draggedMedia=null;isPlaying=false;
+  hoveredIdx=-1;isDragging=false;draggedMedia=null;isPlaying=false;focusedMedia=null;
   panX=0;panY=0;zoomLevel=1.0;
   document.getElementById('zoom-slider').value=1;
   document.getElementById('zoom-disp').textContent='1.0×';
+  updateZoomBtn();
   playbackRate=1.0;
   document.getElementById('speed-slider').value=4;
   document.getElementById('speed-disp').textContent='1.00×';
@@ -1111,10 +1187,16 @@ function toggleSplit(){
 }
 
 // ═══ ZOOM / PAN ════════════════════════════════════════════════════════
+function updateZoomBtn(){
+  const zb=document.getElementById('zoom-btn');
+  if(!zb)return;
+  if(zoomLevel>1.01){zb.classList.add('active')}
+  else{zb.classList.remove('active')}
+}
 function onZoom(){
   zoomLevel=parseFloat(document.getElementById('zoom-slider').value);
   document.getElementById('zoom-disp').textContent=zoomLevel.toFixed(1)+'×';
-  clampPan();
+  clampPan();updateZoomBtn();
 }
 function clampPan(){
   if(!mediaElements.length){panX=panY=0;return}
@@ -1144,6 +1226,7 @@ function handleWheel(e){
   clampPan();
   sl.value=zoomLevel;
   document.getElementById('zoom-disp').textContent=zoomLevel.toFixed(1)+'×';
+  updateZoomBtn();
   return false;
 }
 
@@ -1166,7 +1249,9 @@ function mousePressed(){
     return;
   }
   if(mouseButton===CENTER&&mouseX>0&&mouseX<width&&mouseY>0&&mouseY<height){
-    isPanning=true;lastMX=mouseX;lastMY=mouseY;return;
+    if(focusedMedia){focusedMedia=null;return}
+    if(hoveredIdx!==-1)focusedMedia=mediaElements[hoveredIdx];
+    return;
   }
   if(mouseButton!==LEFT||isDragging)return;
   if(!splitActive&&checkSoundDotClick())return;
@@ -1174,6 +1259,7 @@ function mousePressed(){
     const pos=gridLayout[hoveredIdx],xs=22;
     if(mouseX>pos.x+pos.w-xs&&mouseX<pos.x+pos.w&&mouseY>pos.y&&mouseY<pos.y+xs){
       const rem=mediaElements.splice(hoveredIdx,1)[0];
+      if(focusedMedia===rem)focusedMedia=null;
       if(rem.type==='video'){videos=videos.filter(v=>v!==rem.elt);findMaster()}else updateControls();
       rem.elt.remove();hoveredIdx=-1;autoLayout();return;
     }
@@ -1182,10 +1268,6 @@ function mousePressed(){
 }
 function mouseDragged(){
   if(isDraggingSlider||isDraggingSplit)return;
-  if(isPanning){
-    panX-=mouseX-lastMX;panY-=mouseY-lastMY;
-    lastMX=mouseX;lastMY=mouseY;clampPan();return false;
-  }
 }
 function mouseReleased(){
   isDraggingSlider=false;
@@ -1204,6 +1286,7 @@ function handleKey(e){
   if(document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='TEXTAREA')return;
   const helpOpen=document.getElementById('help-modal').classList.contains('open');
   if(helpOpen){if(e.code==='Escape')closeHelp();return}
+  if(e.code==='Escape'){if(focusedMedia){focusedMedia=null;}return}
   switch(e.code){
     case'Space':e.preventDefault();togglePlayPause();break;
     case'ArrowLeft':e.preventDefault();stepFrame(-1);break;
@@ -1237,7 +1320,7 @@ function togglePanel(){
     if(hint)hint.textContent=vis?'':LC.fs_hint;
   } else {
     const hidden=document.body.classList.toggle('panel-hidden');
-    if(hint)hint.textContent=hidden?'P — '+LC.t_panel:'';
+    if(hint)hint.textContent=hidden?LC.t_panel:'';
   }
 }
 function toggleFullscreen(){
