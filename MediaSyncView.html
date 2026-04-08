@@ -51,10 +51,14 @@ body{
 #canvas-wrap{
   border:1.5px dashed var(--canvas-br);border-radius:.6rem;overflow:hidden;
   width:100%;flex:1;min-height:0;background:var(--canvas-bg);
-  display:flex;align-items:center;justify-content:center;position:relative;
+  position:relative;
   transition:border-color var(--tt),background var(--tt);
 }
-#canvas-wrap canvas{display:block;width:100%!important;height:100%!important}
+#canvas-wrap canvas{
+  display:block;
+  position:absolute;top:0;left:0;
+  width:100%;height:100%;
+}
 
 /* Split divider */
 #split-divider{
@@ -237,7 +241,7 @@ body.panel-hidden #fs-hint{opacity:1}
 
     <!-- Rows 1-4 -->
     <div class="pg">
-      <label class="lbl" id="lbl-rows">Rows</label>
+      <label class="lbl" id="lbl-rows" data-i18n="rows">Rows</label>
       <button class="btn btn-icon row-btn" id="r1" onclick="setRows(1)">1</button>
       <button class="btn btn-icon row-btn" id="r2" onclick="setRows(2)">2</button>
       <button class="btn btn-icon row-btn" id="r3" onclick="setRows(3)">3</button>
@@ -245,21 +249,21 @@ body.panel-hidden #fs-hint{opacity:1}
     </div>
 
     <!-- Clear (5) -->
-    <button class="btn btn-red" id="clear-btn" style="padding:.3rem .5rem" title="">✕</button>
+    <button class="btn btn-red" id="clear-btn" style="padding:.3rem .5rem" data-i18n-title="t_clear">✕</button>
     <div class="sep"></div>
 
     <!-- Loop (6) -->
-    <button id="loop-btn" class="btn btn-icon active" title="">
+    <button id="loop-btn" class="btn btn-icon active" data-i18n-title="t_loop">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
     </button>
 
     <!-- Speed popup (7) -->
     <div class="popup-wrap" id="speed-wrap">
-      <button id="speed-btn" class="btn btn-icon btn-green" title="">
+      <button id="speed-btn" class="btn btn-icon btn-green" data-i18n-title="t_speed">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
       </button>
       <div id="speed-menu" class="popup-menu">
-        <label class="lbl" id="lbl-speed">Speed</label>
+        <label class="lbl" id="lbl-speed" data-i18n="speed">Speed</label>
         <input type="range" id="speed-slider" min="0" max="8" value="4" step="1">
         <span id="speed-disp" class="popup-val">1.00×</span>
       </div>
@@ -267,32 +271,32 @@ body.panel-hidden #fs-hint{opacity:1}
 
     <!-- Zoom popup (8) -->
     <div class="popup-wrap" id="zoom-wrap">
-      <button id="zoom-btn" class="btn btn-icon" title="">
+      <button id="zoom-btn" class="btn btn-icon" data-i18n-title="t_zoom">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
       </button>
       <div id="zoom-menu" class="popup-menu">
-        <label class="lbl" id="lbl-zoom">Zoom</label>
+        <label class="lbl" id="lbl-zoom" data-i18n="zoom">Zoom</label>
         <input type="range" id="zoom-slider" min="1" max="5" value="1" step="0.1">
         <span id="zoom-disp" class="popup-val">1.0×</span>
       </div>
     </div>
 
     <!-- Split (9) -->
-    <button id="split-btn" class="btn btn-icon" title="" disabled>
+    <button id="split-btn" class="btn btn-icon" data-i18n-title="t_split" disabled>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="8" height="16" rx="1"/><rect x="14" y="4" width="8" height="16" rx="1"/></svg>
     </button>
 
     <!-- Mute (0) -->
-    <button id="mute-btn" class="btn btn-icon" title=""></button>
+    <button id="mute-btn" class="btn btn-icon" data-i18n-title="t_mute"></button>
     <div class="sep"></div>
 
     <!-- Playback -->
     <div class="pg">
-      <button id="prev-btn" class="btn btn-icon" title="">
+      <button id="prev-btn" class="btn btn-icon" data-i18n-title="t_prev">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
       </button>
-      <button id="play-btn" class="btn" style="min-width:4rem">Play</button>
-      <button id="next-btn" class="btn btn-icon" title="">
+      <button id="play-btn" class="btn" style="min-width:4rem" data-i18n="play">Play</button>
+      <button id="next-btn" class="btn btn-icon" data-i18n-title="t_next">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
       </button>
     </div>
@@ -300,7 +304,7 @@ body.panel-hidden #fs-hint{opacity:1}
 
     <!-- FPS -->
     <div class="pg">
-      <label class="lbl" id="lbl-fps">FPS</label>
+      <label class="lbl" id="lbl-fps" data-i18n="fps">FPS</label>
       <input type="number" id="fps-input" class="num-input" min="1" value="24" style="width:46px">
     </div>
 
@@ -315,27 +319,27 @@ body.panel-hidden #fs-hint{opacity:1}
     <!-- Import / Theme / Help / Panel -->
     <div class="pg">
       <input type="file" id="file-input" multiple accept="video/*,image/jpeg,image/png,image/gif,image/webp,image/avif,image/svg+xml,image/bmp,image/x-icon,image/apng">
-      <button id="import-btn" class="btn">Import</button>
-      <button id="theme-btn" class="btn btn-icon btn-green" title=""></button>
-      <button id="help-btn" class="btn btn-icon btn-red" title="">
+      <button id="import-btn" class="btn" data-i18n="import">Import</button>
+      <button id="theme-btn" class="btn btn-icon btn-green" data-i18n-title="t_theme"></button>
+      <button id="help-btn" class="btn btn-icon btn-red" data-i18n-title="t_help">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
       </button>
-      <button id="panel-btn" class="btn btn-icon" title="">
+      <button id="panel-btn" class="btn btn-icon" data-i18n-title="t_panel">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
       </button>
     </div>
   </div>
 </div>
 
-<div id="fs-hint"></div>
+<div id="fs-hint" data-i18n="fs_hint"></div>
 
 <!-- Help modal -->
 <div id="help-modal" role="dialog" aria-modal="true">
   <div id="help-box">
-    <h2 id="help-title"></h2>
+    <h2 id="help-title" data-i18n="help_title"></h2>
     <button class="hclose" id="hclose">✕</button>
     <div class="hgrid" id="hgrid"></div>
-    <div id="help-foot"></div>
+    <div id="help-foot" data-i18n="help_foot"></div>
   </div>
 </div>
 
@@ -386,7 +390,7 @@ const I18N = {
   },
   fr:{
     play:'Lire',pause:'Pause',import:'Importer',
-    rows:'Lignes',fps:'IPS',speed:'Vitesse',zoom:'Zoom',
+    rows:'Lignes',fps:'FPS',speed:'Vitesse',zoom:'Zoom',
     dragdrop:'Glisser-déposer ou cliquer pour importer',
     fs_hint:'F — quitter le plein écran',
     help_title:'MediaSyncView v1.0 — Raccourcis',
@@ -445,19 +449,19 @@ const I18N = {
           ['Scroll','Zoom'],['Clic centrale','Panoramica']]
   },
   pt:{
-    play:'Reproduzir',pause:'Pausar',import:'Importar',
-    rows:'Linhas',fps:'FPS',speed:'Veloc.',zoom:'Zoom',
+    play:'Reproduzir',pause:'Pausa',import:'Importar',
+    rows:'Filas',fps:'FPS',speed:'Veloc.',zoom:'Zoom',
     dragdrop:'Arraste ou clique para importar mídia',
     fs_hint:'F — sair da tela cheia',
     help_title:'MediaSyncView v1.0 — Atalhos',
     help_foot:'Based on MediaSyncer by WhatDreamsCost, GPL-3.0',
     t_loop:'Loop (6)',t_prev:'Frame ant. (←)',t_next:'Frame seg. (→)',
-    t_split:'Split View (9)',t_mute:'Mudo (0)',t_theme:'Tema (T)',
+    t_split:'Split View (9)',t_mute:'Silenciar (0)',t_theme:'Tema (T)',
     t_help:'Ajuda (H)',t_clear:'Limpar (5)',t_speed:'Velocidade (7)',t_zoom:'Zoom (8)',t_panel:'Painel (P)',
     keys:[['Reprodução',null],
-          ['Space','Reproduzir / Pausar'],['← →','Frame a frame'],
-          ['1','Linha 1'],['2','Linha 2'],['3','Linha 3'],['4','Linha 4'],
-          ['5','Limpar'],['6','Loop'],['7','Velocidade'],['8','Zoom'],['9','Split View'],['0','Mudo'],
+          ['Space','Reproduzir / Pausa'],['← →','Frame a frame'],
+          ['1','Fila 1'],['2','Fila 2'],['3','Fila 3'],['4','Fila 4'],
+          ['5','Limpar'],['6','Loop'],['7','Velocidade'],['8','Zoom'],['9','Split View'],['0','Silenciar'],
           ['Visualização',null],
           ['F / F11','Tela cheia'],['P','Painel'],
           ['Outros',null],
@@ -496,7 +500,7 @@ const I18N = {
     t_help:'ヘルプ (H)',t_clear:'クリア (5)',t_speed:'速度 (7)',t_zoom:'ズーム (8)',t_panel:'パネル (P)',
     keys:[['再生',null],
           ['Space','再生 / 一時停止'],['← →','フレーム移動'],
-          ['1','行1'],['2','行2'],['3','行3'],['4','行4'],
+          ['1','1行'],['2','2行'],['3','3行'],['4','4行'],
           ['5','クリア'],['6','ループ'],['7','速度'],['8','ズーム'],['9','分割表示'],['0','ミュート'],
           ['表示',null],
           ['F / F11','全画面'],['P','パネル'],
@@ -506,7 +510,7 @@ const I18N = {
   },
   uk:{
     play:'Грати',pause:'Пауза',import:'Імпорт',
-    rows:'Ряди',fps:'Кадри',speed:'Швидк.',zoom:'Масштаб',
+    rows:'Ряди',fps:'FPS',speed:'Швидк.',zoom:'Масштаб',
     dragdrop:'Перетягніть або натисніть для імпорту',
     fs_hint:'F — вийти з повного екрану',
     help_title:'MediaSyncView v1.0 — Гарячі клавіші',
@@ -565,10 +569,10 @@ function setup(){
   c.mouseWheel(handleWheel);
   frameRateInput=select('#fps-input');
 
-  // ResizeObserver keeps canvas in sync with any layout change (panel toggle, fullscreen, window resize)
-  new ResizeObserver(entries=>{
-    const e=entries[0];
-    resizeCanvas(e.contentRect.width,e.contentRect.height);
+  // ResizeObserver keeps canvas pixel-perfect with wrap size
+  new ResizeObserver(()=>{
+    const r=wrap.getBoundingClientRect();
+    resizeCanvas(Math.floor(r.width),Math.floor(r.height));
     applyThemeColors();
   }).observe(wrap);
 
@@ -624,7 +628,7 @@ function setup(){
   window.addEventListener('mousemove',e=>{
     if(!isDraggingSplit)return;
     const r=document.getElementById('canvas-wrap').getBoundingClientRect();
-    splitPos=Math.max(0.1,Math.min(0.9,(e.clientX-r.left)/r.width));
+    splitPos=Math.max(0.01,Math.min(0.99,(e.clientX-r.left)/r.width));
     divider.style.left=(splitPos*100)+'%';
   });
   window.addEventListener('mouseup',()=>{isDraggingSplit=false});
@@ -917,26 +921,19 @@ function applyThemeColors(){
 }
 
 // ═══ I18N APPLY ════════════════════════════════════════════════════════
+// Uses data-i18n="key" for textContent and data-i18n-title="key" for title attribute.
+// To add a new translatable element: add data-i18n or data-i18n-title attribute in HTML.
 function applyLang(){
-  document.getElementById('play-btn').textContent=LC.play;
-  document.getElementById('import-btn').textContent=LC.import;
-  document.getElementById('lbl-rows').textContent=LC.rows;
-  document.getElementById('lbl-fps').textContent=LC.fps;
-  document.getElementById('lbl-speed').textContent=LC.speed;
-  document.getElementById('lbl-zoom').textContent=LC.zoom;
-  document.getElementById('fs-hint').textContent=LC.fs_hint;
-  document.getElementById('help-title').textContent=LC.help_title;
-  document.getElementById('help-foot').textContent=LC.help_foot;
-  document.getElementById('loop-btn').title=LC.t_loop;
-  document.getElementById('prev-btn').title=LC.t_prev;
-  document.getElementById('next-btn').title=LC.t_next;
-  document.getElementById('split-btn').title=LC.t_split;
-  document.getElementById('theme-btn').title=LC.t_theme;
-  document.getElementById('help-btn').title=LC.t_help;
-  document.getElementById('clear-btn').title=LC.t_clear;
-  document.getElementById('speed-btn').title=LC.t_speed;
-  document.getElementById('zoom-btn').title=LC.t_zoom;
-  const pb=document.getElementById('panel-btn');if(pb)pb.title=LC.t_panel||'Panel (P)';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key=el.getAttribute('data-i18n');
+    if(LC[key]!==undefined)el.textContent=LC[key];
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{
+    const key=el.getAttribute('data-i18n-title');
+    if(LC[key]!==undefined)el.title=LC[key];
+  });
+  // mute-btn title sync (icon is set by updateMuteBtn, title here)
+  const mb=document.getElementById('mute-btn');if(mb)mb.title=LC.t_mute;
 }
 
 function buildHelp(){
