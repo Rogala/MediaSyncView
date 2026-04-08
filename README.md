@@ -75,7 +75,8 @@ https://github.com/user-attachments/assets/3c3ec736-a75d-4366-97ba-30734cb4bfe8
 | `T` | Dark / light theme |
 | `H` | Help |
 | `Scroll` | Zoom |
-| `Middle drag` | Pan |
+| `Middle click` | Fullscreen focus on media |
+| `Esc` | Exit focus |
 
 ---
 
@@ -109,6 +110,19 @@ To add a new language: copy any block in the `I18N` object inside the HTML file,
 - The library runs entirely in the browser — no data collection, no network access after load
 
 MediaSyncView first looks for `p5.min.js` in the same folder. If not found, it loads from the official CDN automatically.
+
+---
+
+### Key Updates:
+
+**08.04.2026**
+* **Media Focus Mode:** Added the ability to expand media to full canvas using the middle mouse button. Seamless exit via Escape or toggle click, with automatic focus reset upon media removal.
+* **Automatic FPS Detection:** Implemented an intelligent detection algorithm using `requestVideoFrameCallback` to analyze and set the correct frame rate upon video loading.
+* **UI/UX Overhaul:** Significant interface improvements, including larger buttons, icons, and fonts for better accessibility. Optimized high-contrast themes (pure black/white text) and improved visual feedback for active zoom levels.
+* **Localization & Refactoring:** Standardized Ukrainian localization to `uk` code, removed hardcoded UI strings, and updated tooltips across all 8 supported languages.
+* **Enhanced Monitoring:** Redesigned frame counter and timer displays for improved visibility and precision during playback.
+
+https://github.com/user-attachments/assets/f2dd5764-9ec7-461d-808e-d5aa63d0d529
 
 ---
 
