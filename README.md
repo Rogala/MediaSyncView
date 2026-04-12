@@ -58,6 +58,7 @@ https://github.com/user-attachments/assets/3c3ec736-a75d-4366-97ba-30734cb4bfe8
 
 ## Keyboard shortcuts
 
+### Playback
 | Key | Action |
 |-----|--------|
 | `Space` | Play / Pause all |
@@ -66,17 +67,33 @@ https://github.com/user-attachments/assets/3c3ec736-a75d-4366-97ba-30734cb4bfe8
 | `5` | Clear all |
 | `6` | Loop |
 | `7` | Playback speed |
-| `8` | Zoom |
-| `9` | Split View (2 files) |
 | `0` | Mute / unmute |
+
+### View
+| Key | Action |
+|-----|--------|
+| `Scroll` | Zoom |
+| `8` | Loupe (single file only) |
+| `9` | Split view (2 files only) |
 | `F` / `F11` | Fullscreen |
 | `P` | Toggle panel |
-| `I` | Import files |
+
+### New features
+| Key | Action |
+|-----|--------|
+| `D` | Difference mode (2 files only) |
+| `Q` | Tile comparison (2 files only) |
+| `A` | Annotation / pencil |
+| `S` | Save screen as PNG |
+
+### Other
+| Key | Action |
+|-----|--------|
+| `O` | Open files |
 | `T` | Dark / light theme |
-| `H` | Help |
-| `Scroll` | Zoom |
+| `H` | Help (press again to close) |
 | `Middle click` | Fullscreen focus on media |
-| `Esc` | Exit focus |
+| `Esc` | Exit focus / close Help |
 
 ---
 
