@@ -288,8 +288,7 @@ function setup(){
   c.id('p5-canvas');  // stable id for export
   c.dragOver(()=>{if(!document.getElementById('help-modal').classList.contains('open'))select('#canvas-wrap').style('border-style','solid')});
   c.dragLeave(()=>select('#canvas-wrap').style('border-style','dashed'));
-  c.mouseWheel(handleWheel);
-  // Also attach native wheel listener on the wrap so annot-canvas overlay doesn't block it
+  // One listener handles both the canvas and the annotation overlay.
   document.getElementById('canvas-wrap').addEventListener('wheel',e=>{
     e.preventDefault();
     handleWheel(e);
@@ -569,7 +568,7 @@ function drawSplitView(){
 function drawMediaFill(med){
   const el=med.elt;
   const mw=el.width||(el.elt&&el.elt.naturalWidth)||0;const mh=el.height||(el.elt&&el.elt.naturalHeight)||0;if(!mw||!mh)return;
-  const sw=mw/zoomLevel,sh=mh/zoomLevel;const sx=(mw-sw)/2+panX,sy=(mh-sh)/2+panY;
+  const sw=mw/zoomLevel,sh=mh/zoomLevel;const sx=(mw-sw)/2+panX*mw,sy=(mh-sh)/2+panY*mh;
   const ma=sw/sh;const dh=height,dw=height*ma;image(el,(width-dw)/2,(height-dh)/2,dw,dh,sx,sy,sw,sh);
 }
 function drawSplitLabel(name,x,y,maxW){
@@ -605,7 +604,7 @@ function drawGrid(){
     const med=mediaElements[mi],el=med.elt;
     const rw=el.width||(el.elt&&el.elt.naturalWidth)||0;const rh=el.height||(el.elt&&el.elt.naturalHeight)||0;
     if(rw>0&&rh>0){
-      const sw=rw/zoomLevel,sh=rh/zoomLevel;const sx=(rw-sw)/2+panX,sy=(rh-sh)/2+panY;
+      const sw=rw/zoomLevel,sh=rh/zoomLevel;const sx=(rw-sw)/2+panX*rw,sy=(rh-sh)/2+panY*rh;
       const ca=cw/ch,ma=sw/sh;const dw=ca>ma?ch*ma:cw,dh=ca>ma?ch:cw/ma;
       const x=c*cw+(cw-dw)/2,y=r*ch+(ch-dh)/2;
       image(el,x,y,dw,dh,sx,sy,sw,sh);
@@ -972,26 +971,28 @@ function toggleSplit(){
 // === ZOOM/PAN ===
 function clampPan(){
   if(!mediaElements.length){panX=panY=0;return;}
-  const el=mediaElements[0].elt;const mw=el.width||(el.elt&&el.elt.naturalWidth)||0;const mh=el.height||(el.elt&&el.elt.naturalHeight)||0;
-  if(!mw){panX=panY=0;return;}const mx=(mw-mw/zoomLevel)/2,my=(mh-mh/zoomLevel)/2;
-  panX=mx>=0?constrain(panX,-mx,mx):0;panY=my>=0?constrain(panY,-my,my):0;
+  const limit=(1-1/zoomLevel)/2;
+  panX=constrain(panX,-limit,limit);panY=constrain(panY,-limit,limit);
 }
 function handleWheel(e){
-  const wrap=document.getElementById('canvas-wrap');
-  const r=wrap.getBoundingClientRect();
-  const mx=(e.clientX!==undefined?e.clientX:mouseX+r.left)-r.left;
-  const my=(e.clientY!==undefined?e.clientY:mouseY+r.top)-r.top;
-  if(mx<0||mx>r.width||my<0||my>r.height)return;
-  if(!mediaElements.length)return;
-  const spd=0.1,old=zoomLevel;
-  zoomLevel+=e.deltaY<0?spd*old:-spd*old;
-  zoomLevel=constrain(zoomLevel,1,10);
-  const el=mediaElements[0].elt,mw=el.width||(el.elt&&el.elt.naturalWidth)||0,mh=el.height||(el.elt&&el.elt.naturalHeight)||0;
-  if(mw>0){
-    const wX=(panX+(mw-mw/old)/2)+(mx/width)*(mw/old);
-    const wY=(panY+(mh-mh/old)/2)+(my/height)*(mh/old);
-    panX=wX-(mx/width)*(mw/zoomLevel)-(mw-mw/zoomLevel)/2;
-    panY=wY-(my/height)*(mh/zoomLevel)-(mh-mh/zoomLevel)/2;
+  const r=document.getElementById('p5-canvas').getBoundingClientRect();
+  const mx=e.clientX!==undefined?(e.clientX-r.left)*width/r.width:mouseX;
+  const my=e.clientY!==undefined?(e.clientY-r.top)*height/r.height:mouseY;
+  if(mx<0||mx>width||my<0||my>height||!mediaElements.length)return;
+  const old=zoomLevel;
+  zoomLevel=constrain(old+(e.deltaY<0?0.1*old:-0.1*old),1,10);
+  let pos;
+  if(splitActive){
+    const med=mediaElements[mx<splitPos*width?0:1],el=med&&med.elt;
+    const mw=el&&(el.width||(el.elt&&el.elt.naturalWidth)),mh=el&&(el.height||(el.elt&&el.elt.naturalHeight));
+    if(mw&&mh){const dw=height*mw/mh;pos={x:(width-dw)/2,y:0,w:dw,h:height};}
+  }else{
+    pos=gridLayout.find(p=>p&&mx>=p.x&&mx<=p.x+p.w&&my>=p.y&&my<=p.y+p.h);
+  }
+  if(pos){
+    const u=constrain((mx-pos.x)/pos.w,0,1),v=constrain((my-pos.y)/pos.h,0,1);
+    panX+=(u-0.5)*(1/old-1/zoomLevel);
+    panY+=(v-0.5)*(1/old-1/zoomLevel);
   }
   clampPan();return false;
 }
